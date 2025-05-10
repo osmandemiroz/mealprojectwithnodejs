@@ -13,6 +13,10 @@ class AppState extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Search states
+  String _searchQuery = '';
+  String _selectedCategory = 'All';
+
   AppState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
   // Getters
@@ -21,6 +25,39 @@ class AppState extends ChangeNotifier {
   List<GroceryList> get groceryLists => _groceryLists;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String get searchQuery => _searchQuery;
+  String get selectedCategory => _selectedCategory;
+
+  // Get filtered recipes based on search query and selected category
+  List<Recipe> get filteredRecipes {
+    if (_searchQuery.isEmpty && _selectedCategory == 'All') {
+      return _recipes;
+    }
+
+    return _recipes.where((recipe) {
+      // Filter by search query
+      final matchesSearch = _searchQuery.isEmpty ||
+          recipe.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          recipe.description.toLowerCase().contains(_searchQuery.toLowerCase());
+
+      // Filter by category
+      final matchesCategory = _selectedCategory == 'All' ||
+          recipe.categories.contains(_selectedCategory);
+
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
+
+  // Search methods
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+
+  void setSelectedCategory(String category) {
+    _selectedCategory = category;
+    notifyListeners();
+  }
 
   // Recipe methods
   Future<void> loadRecipes() async {

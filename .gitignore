@@ -67,3 +67,5 @@ app.*.map.json
 *.sqlite-journal
 *.sqlite3-journal
 *.db-journal
+server/src/database/recipe_db.db
+server/src/utils/recipe_db.db

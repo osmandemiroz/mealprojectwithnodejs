@@ -16,6 +16,8 @@ class RecipesScreen extends StatefulWidget {
 }
 
 class _RecipesScreenState extends State<RecipesScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -23,6 +25,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
     Future.microtask(() {
       context.read<AppState>().loadRecipes();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _navigateToRecipeDetails(Recipe recipe) {
@@ -61,6 +69,11 @@ class _RecipesScreenState extends State<RecipesScreen> {
           );
         }
 
+        // Use filteredRecipes instead of recipes directly
+        final displayedRecipes = appState.filteredRecipes;
+        final isEmptyResults =
+            appState.recipes.isNotEmpty && displayedRecipes.isEmpty;
+
         return CustomScrollView(
           slivers: [
             // Search Bar
@@ -68,16 +81,29 @@ class _RecipesScreenState extends State<RecipesScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(AppTheme.spacing16),
                 child: SearchBar(
+                  controller: _searchController,
                   hintText: 'Search recipes...',
                   leading: const Icon(Icons.search),
-                  padding: WidgetStateProperty.all(
+                  trailing: appState.searchQuery.isNotEmpty
+                      ? [
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              appState.setSearchQuery('');
+                            },
+                          ),
+                        ]
+                      : null,
+                  padding: MaterialStateProperty.all(
                     const EdgeInsets.symmetric(
                       horizontal: AppTheme.spacing16,
                       vertical: AppTheme.spacing12,
                     ),
                   ),
                   onChanged: (query) {
-                    // TODO: Implement search
+                    // Implement search functionality
+                    appState.setSearchQuery(query);
                   },
                 ),
               ),
@@ -93,12 +119,18 @@ class _RecipesScreenState extends State<RecipesScreen> {
                     horizontal: AppTheme.spacing16,
                   ),
                   children: [
-                    _buildCategoryChip('All', true),
-                    _buildCategoryChip('Breakfast', false),
-                    _buildCategoryChip('Lunch', false),
-                    _buildCategoryChip('Dinner', false),
-                    _buildCategoryChip('Snacks', false),
-                    _buildCategoryChip('Desserts', false),
+                    _buildCategoryChip(
+                        'All', appState.selectedCategory == 'All'),
+                    _buildCategoryChip(
+                        'Breakfast', appState.selectedCategory == 'Breakfast'),
+                    _buildCategoryChip(
+                        'Lunch', appState.selectedCategory == 'Lunch'),
+                    _buildCategoryChip(
+                        'Dinner', appState.selectedCategory == 'Dinner'),
+                    _buildCategoryChip(
+                        'Snacks', appState.selectedCategory == 'Snacks'),
+                    _buildCategoryChip(
+                        'Desserts', appState.selectedCategory == 'Desserts'),
                   ],
                 ),
               ),
@@ -108,33 +140,59 @@ class _RecipesScreenState extends State<RecipesScreen> {
               padding: EdgeInsets.all(AppTheme.spacing8),
             ),
 
-            // Recipe Grid
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacing16,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppTheme.spacing16,
-                  crossAxisSpacing: AppTheme.spacing16,
-                  childAspectRatio: 0.75,
+            // Show empty results message if needed
+            if (isEmptyResults)
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTheme.spacing24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.search_off,
+                          size: 48,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                        const SizedBox(height: AppTheme.spacing16),
+                        Text(
+                          'No recipes found for "${appState.searchQuery}"',
+                          style: AppTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final recipe = appState.recipes[index];
-                    return Hero(
-                      tag: 'recipe_image_${recipe.id}',
-                      child: RecipeCard(
-                        recipe: recipe,
-                        onTap: () => _navigateToRecipeDetails(recipe),
-                      ),
-                    );
-                  },
-                  childCount: appState.recipes.length,
+              )
+            else
+              // Recipe Grid
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacing16,
+                ),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: AppTheme.spacing16,
+                    crossAxisSpacing: AppTheme.spacing16,
+                    childAspectRatio: 0.73,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final recipe = displayedRecipes[index];
+                      return Hero(
+                        tag: 'recipe_image_${recipe.id}',
+                        child: RecipeCard(
+                          recipe: recipe,
+                          onTap: () => _navigateToRecipeDetails(recipe),
+                        ),
+                      );
+                    },
+                    childCount: displayedRecipes.length,
+                  ),
                 ),
               ),
-            ),
 
             const SliverPadding(
               padding: EdgeInsets.all(AppTheme.spacing16),
@@ -152,7 +210,10 @@ class _RecipesScreenState extends State<RecipesScreen> {
         label: Text(label),
         selected: isSelected,
         onSelected: (selected) {
-          // TODO: Implement category filtering
+          // Implement category filtering
+          if (selected) {
+            context.read<AppState>().setSelectedCategory(label);
+          }
         },
         backgroundColor: AppTheme.backgroundColor,
         selectedColor: AppTheme.primaryColor.withAlpha(26),
