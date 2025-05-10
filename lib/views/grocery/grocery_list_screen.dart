@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_theme.dart';
@@ -104,7 +103,6 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 class _GroceryListCard extends StatelessWidget {
   const _GroceryListCard({
     required this.groceryList,
-    super.key,
   });
 
   final GroceryList groceryList;

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
 import '../constants/app_theme.dart';
 import '../models/recipe.dart';
 
@@ -39,7 +40,7 @@ class RecipeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(AppTheme.borderRadiusMedium),
                   topRight: Radius.circular(AppTheme.borderRadiusMedium),
                 ),

@@ -1,10 +1,14 @@
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+
 import 'package:flutter/foundation.dart';
-import '../models/recipe.dart';
-import '../models/meal_plan.dart';
+
 import '../models/grocery_list.dart';
+import '../models/meal_plan.dart';
+import '../models/recipe.dart';
 import '../services/api_service.dart';
 
 class AppState extends ChangeNotifier {
+  AppState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
   final ApiService _apiService;
 
   List<Recipe> _recipes = [];
@@ -16,8 +20,6 @@ class AppState extends ChangeNotifier {
   // Search states
   String _searchQuery = '';
   String _selectedCategory = 'All';
-
-  AppState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
   // Getters
   List<Recipe> get recipes => _recipes;

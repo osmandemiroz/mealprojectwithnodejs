@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_theme.dart';
-import '../../models/meal_plan.dart';
-import '../../models/recipe.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_message.dart';
 import '../../widgets/loading_indicator.dart';
@@ -25,7 +23,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController();
     Future.microtask(() {
       context.read<AppState>().loadMealPlans();
     });
@@ -105,7 +103,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   itemBuilder: (context, weekIndex) {
                     final weekStart = DateTime.now().add(
                       Duration(
-                          days: weekIndex * 7 - DateTime.now().weekday + 1),
+                        days: weekIndex * 7 - DateTime.now().weekday + 1,
+                      ),
                     );
                     return _buildWeekCalendar(weekStart);
                   },

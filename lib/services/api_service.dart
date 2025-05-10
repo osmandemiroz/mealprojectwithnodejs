@@ -1,14 +1,15 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import '../models/recipe.dart';
-import '../models/meal_plan.dart';
+
 import '../models/grocery_list.dart';
+import '../models/meal_plan.dart';
+import '../models/recipe.dart';
 
 class ApiService {
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
   static const String baseUrl = 'http://localhost:3000/api';
   final http.Client _client;
-
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   // Recipe endpoints
   Future<List<Recipe>> getRecipes() async {
@@ -26,7 +27,8 @@ class ApiService {
     final response = await _client.get(Uri.parse('$baseUrl/recipes/$id'));
     if (response.statusCode == 200) {
       return _transformRecipeResponse(
-          json.decode(response.body) as Map<String, dynamic>);
+        json.decode(response.body) as Map<String, dynamic>,
+      );
     }
     throw Exception('Failed to load recipe');
   }
@@ -39,7 +41,8 @@ class ApiService {
     );
     if (response.statusCode == 201) {
       return _transformRecipeResponse(
-          json.decode(response.body) as Map<String, dynamic>);
+        json.decode(response.body) as Map<String, dynamic>,
+      );
     }
     throw Exception('Failed to create recipe');
   }
@@ -58,9 +61,11 @@ class ApiService {
       cookingTime: int.tryParse(json['cook_time']?.toString() ?? '') ?? 0,
       servings: int.tryParse(json['servings']?.toString() ?? '') ?? 0,
       ingredients: _parseStringList(
-          json['ingredients']), // Parse comma-separated string to List
+        json['ingredients'],
+      ), // Parse comma-separated string to List
       instructions: _parseStringList(
-          json['instructions_list']), // Parse comma-separated string to List
+        json['instructions_list'],
+      ), // Parse comma-separated string to List
       categories: _parseStringList(json['category']), // Single category to List
       calories: int.tryParse(json['calories']?.toString() ?? '') ?? 0,
       nutrients: {
@@ -72,7 +77,6 @@ class ApiService {
             double.tryParse(json['dietary_fiber_g']?.toString() ?? '') ?? 0.0,
         'sodium': double.tryParse(json['sodium_mg']?.toString() ?? '') ?? 0.0,
       },
-      rating: 0.0, // Default rating since it's not in the database
     );
   }
 
@@ -101,12 +105,13 @@ class ApiService {
   List<String> _parseStringList(dynamic value) {
     if (value == null) return [];
     if (value is List) return value.map((e) => e.toString()).toList();
-    if (value is String)
+    if (value is String) {
       return value
           .split(',')
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList();
+    }
     return [];
   }
 
@@ -128,7 +133,8 @@ class ApiService {
     );
     if (response.statusCode == 200) {
       return MealPlan.fromJson(
-          json.decode(response.body) as Map<String, dynamic>);
+        json.decode(response.body) as Map<String, dynamic>,
+      );
     }
     throw Exception('Failed to load meal plan');
   }
@@ -141,7 +147,8 @@ class ApiService {
     );
     if (response.statusCode == 201) {
       return MealPlan.fromJson(
-          json.decode(response.body) as Map<String, dynamic>);
+        json.decode(response.body) as Map<String, dynamic>,
+      );
     }
     throw Exception('Failed to create meal plan');
   }

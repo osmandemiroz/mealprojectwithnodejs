@@ -1,11 +1,14 @@
+// ignore_for_file: inference_failure_on_instance_creation, document_ignores
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../constants/app_theme.dart';
-import '../../providers/app_state.dart';
-import '../../widgets/recipe_card.dart';
-import '../../widgets/loading_indicator.dart';
-import '../../widgets/error_message.dart';
 import '../../models/recipe.dart';
+import '../../providers/app_state.dart';
+import '../../widgets/error_message.dart';
+import '../../widgets/loading_indicator.dart';
+import '../../widgets/recipe_card.dart';
 import 'recipe_details_screen.dart';
 
 class RecipesScreen extends StatefulWidget {
@@ -95,7 +98,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                           ),
                         ]
                       : null,
-                  padding: MaterialStateProperty.all(
+                  padding: WidgetStateProperty.all(
                     const EdgeInsets.symmetric(
                       horizontal: AppTheme.spacing16,
                       vertical: AppTheme.spacing12,
@@ -120,17 +123,29 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   ),
                   children: [
                     _buildCategoryChip(
-                        'All', appState.selectedCategory == 'All'),
+                      'All',
+                      appState.selectedCategory == 'All',
+                    ),
                     _buildCategoryChip(
-                        'Breakfast', appState.selectedCategory == 'Breakfast'),
+                      'Breakfast',
+                      appState.selectedCategory == 'Breakfast',
+                    ),
                     _buildCategoryChip(
-                        'Lunch', appState.selectedCategory == 'Lunch'),
+                      'Lunch',
+                      appState.selectedCategory == 'Lunch',
+                    ),
                     _buildCategoryChip(
-                        'Dinner', appState.selectedCategory == 'Dinner'),
+                      'Dinner',
+                      appState.selectedCategory == 'Dinner',
+                    ),
                     _buildCategoryChip(
-                        'Snacks', appState.selectedCategory == 'Snacks'),
+                      'Snacks',
+                      appState.selectedCategory == 'Snacks',
+                    ),
                     _buildCategoryChip(
-                        'Desserts', appState.selectedCategory == 'Desserts'),
+                      'Desserts',
+                      appState.selectedCategory == 'Desserts',
+                    ),
                   ],
                 ),
               ),
