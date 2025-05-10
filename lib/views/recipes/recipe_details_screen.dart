@@ -81,7 +81,9 @@ class RecipeDetailsScreen extends StatelessWidget {
                         child: _buildInfoChip(
                           icon: Icons.timer_outlined,
                           label: 'Prep Time',
-                          value: '${recipe.preparationTime} min',
+                          value: recipe.preparationTime > 0
+                              ? '${recipe.preparationTime} min'
+                              : '0 min',
                         ),
                       ),
                       const SizedBox(width: AppTheme.spacing12),
@@ -89,7 +91,9 @@ class RecipeDetailsScreen extends StatelessWidget {
                         child: _buildInfoChip(
                           icon: Icons.local_fire_department_outlined,
                           label: 'Calories',
-                          value: '${recipe.calories} kcal',
+                          value: recipe.calories > 0
+                              ? '${recipe.calories} kcal'
+                              : '0 kcal',
                         ),
                       ),
                       const SizedBox(width: AppTheme.spacing12),
@@ -149,7 +153,11 @@ class RecipeDetailsScreen extends StatelessWidget {
 
                   const SizedBox(height: AppTheme.spacing12),
 
-                  ...recipe.instructions.asMap().entries.map((entry) {
+                  // Process all instructions and split into individual sentences
+                  ..._getAllInstructionSentences(recipe.instructions)
+                      .asMap()
+                      .entries
+                      .map((entry) {
                     return Padding(
                       padding:
                           const EdgeInsets.only(bottom: AppTheme.spacing16),
@@ -270,5 +278,47 @@ class RecipeDetailsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Helper method to split all instructions into individual sentences
+  List<String> _getAllInstructionSentences(List<String> instructions) {
+    final allSentences = <String>[];
+
+    for (final instruction in instructions) {
+      // Process each instruction paragraph
+      final sentences = _splitIntoSentences(instruction);
+      allSentences.addAll(sentences);
+    }
+
+    return allSentences;
+  }
+
+  // Helper method to split instructions into sentences
+  List<String> _splitIntoSentences(String text) {
+    // First try to split by '. ' but preserve periods in abbreviations like "e.g." or numbers like "1.5"
+    final result = <String>[];
+
+    // This regex looks for '. ' but not when preceded by a single letter or a number
+    final pattern = RegExp(r'(?<!\s[A-Za-z]|[0-9])\.\s+');
+
+    final parts = text.split(pattern);
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].trim();
+
+      // Add the period back for all but the last part if it doesn't already end with punctuation
+      if (i < parts.length - 1 &&
+          !part.endsWith('.') &&
+          !part.endsWith('!') &&
+          !part.endsWith('?')) {
+        part = '$part.';
+      }
+
+      if (part.isNotEmpty) {
+        result.add(part);
+      }
+    }
+
+    // If no sentences were found or just one, return the original text as a single sentence
+    return result.isEmpty ? [text] : result;
   }
 }

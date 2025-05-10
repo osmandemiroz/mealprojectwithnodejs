@@ -57,7 +57,7 @@ class ApiService {
           .toString(), // Map 'title' to 'name' with null safety
       description: (json['description'] ?? '').toString(),
       imageUrl: (json['image'] ?? '').toString(), // Map 'image' to 'imageUrl'
-      preparationTime: int.tryParse(json['prep_time']?.toString() ?? '') ?? 0,
+      preparationTime: _extractPreparationMinutes(json['prep_time']),
       cookingTime: int.tryParse(json['cook_time']?.toString() ?? '') ?? 0,
       servings: int.tryParse(json['servings']?.toString() ?? '') ?? 0,
       ingredients: _parseStringList(
@@ -67,7 +67,7 @@ class ApiService {
         json['instructions_list'],
       ), // Parse comma-separated string to List
       categories: _parseStringList(json['category']), // Single category to List
-      calories: int.tryParse(json['calories']?.toString() ?? '') ?? 0,
+      calories: _extractCalories(json['calories']),
       nutrients: {
         'protein': double.tryParse(json['protein_g']?.toString() ?? '') ?? 0.0,
         'carbohydrates':
@@ -106,6 +106,37 @@ class ApiService {
     if (value == null) return [];
     if (value is List) return value.map((e) => e.toString()).toList();
     if (value is String) {
+      // Handle array-like string format from API: "['item1', 'item2', ...]"
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          // Remove the outer brackets
+          String strippedValue = value.substring(1, value.length - 1);
+
+          // Split by the pattern ', ' but only when preceded by a single quote
+          // This helps prevent splitting text that contains periods
+          List<String> items = [];
+          RegExp regex = RegExp(r"'(.*?)'(?:,\s*|$)");
+          Iterable<Match> matches = regex.allMatches(strippedValue);
+
+          for (Match match in matches) {
+            if (match.group(1) != null) {
+              items.add(match.group(1)!);
+            }
+          }
+
+          return items;
+        } catch (e) {
+          print('[_parseStringList] Error parsing array string: $e');
+          // Fall back to comma splitting if regex fails
+          return value
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+        }
+      }
+
+      // Regular comma-separated string
       return value
           .split(',')
           .map((e) => e.trim())
@@ -113,6 +144,45 @@ class ApiService {
           .toList();
     }
     return [];
+  }
+
+  // Extract preparation time in minutes from string like "15 mins" or null
+  int _extractPreparationMinutes(dynamic prepTimeValue) {
+    if (prepTimeValue == null) return 0;
+
+    final prepTimeStr = prepTimeValue.toString();
+    if (prepTimeStr.isEmpty) return 0;
+
+    // Try to extract numeric part from strings like "15 mins"
+    final RegExp numericRegex = RegExp(r'(\d+)');
+    final match = numericRegex.firstMatch(prepTimeStr);
+
+    if (match != null && match.group(1) != null) {
+      return int.tryParse(match.group(1)!) ?? 0;
+    }
+
+    // Fallback to direct parsing if it's just a number
+    return int.tryParse(prepTimeStr) ?? 0;
+  }
+
+  // Extract calories value ensuring it's an integer
+  int _extractCalories(dynamic caloriesValue) {
+    if (caloriesValue == null) return 0;
+
+    if (caloriesValue is int) return caloriesValue;
+    if (caloriesValue is double) return caloriesValue.round();
+
+    final caloriesStr = caloriesValue.toString();
+    if (caloriesStr.isEmpty) return 0;
+
+    // Try parsing as double first then convert to int
+    final double? parsedDouble = double.tryParse(caloriesStr);
+    if (parsedDouble != null) {
+      return parsedDouble.round();
+    }
+
+    // Fallback to direct integer parsing
+    return int.tryParse(caloriesStr) ?? 0;
   }
 
   // Meal Plan endpoints
