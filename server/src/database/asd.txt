@@ -1,0 +1,88 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS ALIGNS_WITH (
+    GID INTEGER NOT NULL,
+    RID INTEGER NOT NULL,
+    Compatibility_Score INTEGER CHECK (Compatibility_Score BETWEEN 1 AND 5),
+    PRIMARY KEY (GID, RID),
+    FOREIGN KEY (GID) REFERENCES GOAL(GID) ON DELETE CASCADE,
+    FOREIGN KEY (RID) REFERENCES RECIPE(RID) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS CREATES_SAVES (
+    UID INTEGER NOT NULL,
+    RID INTEGER NOT NULL,
+    Creation_Date TEXT NOT NULL,
+    Save_Date TEXT,
+    IsFavorite BOOLEAN DEFAULT 0,
+    PRIMARY KEY (UID, RID),
+    FOREIGN KEY (UID) REFERENCES USER(UID) ON DELETE CASCADE,
+    FOREIGN KEY (RID) REFERENCES RECIPE(RID) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS GOAL (
+    GID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Goal_Type TEXT NOT NULL,
+    Start_Date TEXT NOT NULL,
+    End_Date TEXT NOT NULL,
+    Target_Calories INTEGER NOT NULL,
+    Target_Protein INTEGER NOT NULL,
+    Target_Carbs INTEGER NOT NULL,
+    Target_Fat INTEGER NOT NULL,
+    UID INTEGER NOT NULL,
+    FOREIGN KEY (UID) REFERENCES USER(UID) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS MANAGES (
+    Admin_UID INTEGER NOT NULL,
+    User_UID INTEGER NOT NULL,
+    PRIMARY KEY (Admin_UID, User_UID),
+    FOREIGN KEY (Admin_UID) REFERENCES USER(UID) ON DELETE SET NULL,
+    FOREIGN KEY (User_UID) REFERENCES USER(UID) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS RECIPE (
+    RID INTEGER PRIMARY KEY,  -- RID artık PRIMARY KEY olacak
+    title TEXT,
+    category TEXT,
+    description TEXT,
+    ingredients TEXT,
+    prep_time INTEGER,
+    cook_time INTEGER,
+    total_time INTEGER,
+    servings INTEGER,
+    yields TEXT,
+    calories REAL,
+    carbohydrates_g REAL,
+    sugars_g REAL,
+    fat_g REAL,
+    saturated_fat_g REAL,
+    cholesterol_mg REAL,
+    protein_g REAL,
+    dietary_fiber_g REAL,
+    sodium_mg REAL,
+    calories_from_fat REAL,
+    calcium_mg REAL,
+    iron_mg REAL,
+    magnesium_mg REAL,
+    potassium_mg REAL,
+    vitamin_a_iu_IU REAL,
+    niacin_equivalents_mg REAL,
+    vitamin_c_mg REAL,
+    folate_mcg REAL,
+    thiamin_mg REAL,
+    instructions_list TEXT,
+    image TEXT
+);
+CREATE TABLE IF NOT EXISTS TRACKS_PROGRESS (
+    UID INTEGER NOT NULL UNIQUE,
+    GID INTEGER NOT NULL UNIQUE,
+    Current_Weight REAL NOT NULL,
+    Progress_Percentage REAL CHECK (Progress_Percentage BETWEEN 0 AND 100),
+    Last_Updated_Date TEXT NOT NULL,
+    PRIMARY KEY (UID, GID),
+    FOREIGN KEY (UID) REFERENCES USER(UID) ON DELETE CASCADE,
+    FOREIGN KEY (GID) REFERENCES GOAL(GID) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS USER (
+    UID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Account_Creation_Date TEXT NOT NULL,
+    Access_Level TEXT NOT NULL,
+    Name TEXT NOT NULL,
+    Email TEXT UNIQUE NOT NULL,
+    Dietary_Preferences TEXT
