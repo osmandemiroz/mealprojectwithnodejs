@@ -15,14 +15,24 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system overlay style
+  // Set system overlay style for edge-to-edge UI
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
+      statusBarBrightness: Brightness
+          .light, // iOS: light status bar content for dark backgrounds
+      statusBarIconBrightness: Brightness
+          .dark, // Android: dark status bar content for light backgrounds
+      systemNavigationBarColor:
+          Colors.transparent, // Make the navigation bar transparent
       systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
     ),
+  );
+
+  // Enable edge-to-edge for both platforms
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
   );
 
   runApp(const MyApp());

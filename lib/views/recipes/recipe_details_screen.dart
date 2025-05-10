@@ -15,20 +15,44 @@ class RecipeDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         slivers: [
-          // App Bar with Image
+          // App Bar with Image - extend to full edge-to-edge
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight:
+                300 + statusBarHeight, // Account for status bar height
             pinned: true,
             backgroundColor: AppTheme.surfaceColor,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              onPressed: () => Navigator.pop(context),
+            // Remove default padding to get edge-to-edge look
+            leadingWidth: 60,
+            leading: Padding(
+              padding: EdgeInsets.only(left: 16.0, top: statusBarHeight - 4),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
             ),
             flexibleSpace: FlexibleSpaceBar(
+              // Remove any default padding
+              titlePadding: EdgeInsets.zero,
+              // Make the image take the full width and height including status bar
               background: Hero(
                 tag: 'recipe_image_${recipe.id}',
                 child: CachedNetworkImage(

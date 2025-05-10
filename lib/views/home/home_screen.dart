@@ -18,53 +18,69 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // App Bar
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacing16),
-              color: AppTheme.surfaceColor,
-              child: Row(
-                children: [
-                  Text(
-                    _getTitle(),
-                    style: AppTheme.headlineMedium.copyWith(
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () {
-                      // TODO: Implement search
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.person_outline),
-                    onPressed: () {
-                      // TODO: Implement profile
-                    },
-                  ),
-                ],
-              ),
-            ),
+    // Get the status bar height to properly position content
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
-            // Main Content
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: const [
-                  MealPlanScreen(),
-                  RecipesScreen(),
-                  GroceryListScreen(),
-                  SettingsScreen(),
-                ],
-              ),
+    return Scaffold(
+      // Remove SafeArea and use a Column with proper padding for the top
+      body: Column(
+        children: [
+          // App Bar with status bar height included
+          Container(
+            padding: EdgeInsets.only(
+              top: statusBarHeight +
+                  AppTheme.spacing8, // Add padding above the title
+              left: AppTheme.spacing16,
+              right: AppTheme.spacing16,
+              bottom: AppTheme.spacing8,
             ),
-          ],
-        ),
+            color: AppTheme.surfaceColor,
+            child: Row(
+              children: [
+                Text(
+                  _getTitle(),
+                  style: AppTheme.headlineMedium.copyWith(
+                    color: AppTheme.textPrimaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    // TODO: Implement search
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.person_outline),
+                  onPressed: () {
+                    // TODO: Implement profile
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Subtle divider between app bar and content
+          const Divider(
+            height: 1,
+            thickness: 0.5,
+            color: AppTheme.borderColor,
+          ),
+
+          // Main Content
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: const [
+                MealPlanScreen(),
+                RecipesScreen(),
+                GroceryListScreen(),
+                SettingsScreen(),
+              ],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
