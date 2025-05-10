@@ -86,11 +86,25 @@ class _RecipesScreenState extends State<RecipesScreen> {
                 child: SearchBar(
                   controller: _searchController,
                   hintText: 'Search recipes...',
-                  leading: const Icon(Icons.search),
+                  hintStyle: MaterialStateProperty.all(
+                    AppTheme.bodyLarge.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+                  textStyle: MaterialStateProperty.all(
+                    AppTheme.bodyLarge,
+                  ),
+                  leading: const Icon(
+                    Icons.search,
+                    color: AppTheme.textSecondaryColor,
+                  ),
                   trailing: appState.searchQuery.isNotEmpty
                       ? [
                           IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: const Icon(
+                              Icons.clear,
+                              color: AppTheme.textSecondaryColor,
+                            ),
                             onPressed: () {
                               _searchController.clear();
                               appState.setSearchQuery('');
@@ -103,6 +117,16 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       horizontal: AppTheme.spacing16,
                       vertical: AppTheme.spacing12,
                     ),
+                  ),
+                  elevation: MaterialStateProperty.all(0), // Remove shadow
+                  backgroundColor: MaterialStateProperty.all(
+                      Colors.transparent), // Transparent background
+                  shadowColor: MaterialStateProperty.all(
+                      Colors.transparent), // Remove shadow
+                  surfaceTintColor: MaterialStateProperty.all(
+                      Colors.transparent), // Remove tint
+                  side: MaterialStateProperty.all(
+                    BorderSide.none, // Remove border
                   ),
                   onChanged: (query) {
                     // Implement search functionality
