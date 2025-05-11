@@ -5,16 +5,16 @@ const db = new sqlite3.Database(path.join(__dirname, '../database/recipe_db_with
 
 class User {
     static async create(userData) {
-        const { name, email, accessLevel, dietaryPreferences } = userData;
+        const { name, email, accessLevel, password, height, weight, gender, age } = userData;
         const accountCreationDate = new Date().toISOString();
-        
+
         return new Promise((resolve, reject) => {
             const query = `
-                INSERT INTO USER (Account_Creation_Date, Access_Level, Name, Email, Dietary_Preferences)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO USER (Account_Creation_Date, Access_Level, Name, Email, Password, Height, Weight, GENDER, Age)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            
-            db.run(query, [accountCreationDate, accessLevel, name, email, dietaryPreferences], function(err) {
+
+            db.run(query, [accountCreationDate, accessLevel, name, email, password, height, weight, gender, age], function(err) {
                 if (err) reject(err);
                 resolve(this.lastID);
             });
@@ -42,16 +42,16 @@ class User {
     }
 
     static async update(uid, userData) {
-        const { name, email, accessLevel, dietaryPreferences } = userData;
-        
+        const { name, email, accessLevel, password, height, weight, gender, age } = userData;
+
         return new Promise((resolve, reject) => {
             const query = `
                 UPDATE USER 
-                SET Name = ?, Email = ?, Access_Level = ?, Dietary_Preferences = ?
+                SET Name = ?, Email = ?, Access_Level = ?, Password = ?, Height = ?, Weight = ?, GENDER = ?, Age = ?, 
                 WHERE UID = ?
             `;
-            
-            db.run(query, [name, email, accessLevel, dietaryPreferences, uid], function(err) {
+
+            db.run(query, [name, email, accessLevel, password, height, weight, gender, age, uid], function(err) {
                 if (err) reject(err);
                 resolve(this.changes > 0);
             });
@@ -92,6 +92,16 @@ class User {
             });
         });
     }
+
+    static async login(email, password) {
+        return new Promise((resolve, reject) => {
+            const query = 'SELECT * FROM USER WHERE Email = ? AND password = ?';
+            db.get(query, [email, password], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+    }
 }
 
-module.exports = User; 
+module.exports = User;

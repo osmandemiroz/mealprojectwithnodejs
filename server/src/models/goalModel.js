@@ -5,17 +5,18 @@ const db = new sqlite3.Database(path.join(__dirname, '../database/recipe_db_with
 
 class Goal {
     static async create(goalData) {
-        const { goalType, startDate, endDate, targetCalories, targetProtein, targetCarbs, targetFat, uid } = goalData;
-        
+        const { goalType, startDate, endDate, targetCalories, targetProtein, targetCarbs, targetFat, uid, desiredWeight, startWeight, numberOfMealsPerDay, activityStatusPerDay } = goalData;
+
         return new Promise((resolve, reject) => {
             const query = `
                 INSERT INTO GOAL (Goal_Type, Start_Date, End_Date, Target_Calories, Target_Protein, 
-                                Target_Carbs, Target_Fat, UID)
+                                Target_Carbs, Target_Fat, UID, desired_Weight, start_weight, number_of_meals_per_day, activity_status_per_day)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            
-            db.run(query, [goalType, startDate, endDate, targetCalories, targetProtein, 
-                          targetCarbs, targetFat, uid], function(err) {
+
+            db.run(query, [goalType, startDate, endDate, targetCalories, targetProtein,
+                targetCarbs, targetFat, uid, desiredWeight, startWeight, numberOfMealsPerDay, activityStatusPerDay
+            ], function(err) {
                 if (err) reject(err);
                 resolve(this.lastID);
             });
@@ -43,18 +44,20 @@ class Goal {
     }
 
     static async update(gid, goalData) {
-        const { goalType, startDate, endDate, targetCalories, targetProtein, targetCarbs, targetFat } = goalData;
-        
+        const { goalType, startDate, endDate, targetCalories, targetProtein, targetCarbs, targetFat, desiredWeight, startWeight, numberOfMealsPerDay, activityStatusPerDay } = goalData;
+
         return new Promise((resolve, reject) => {
             const query = `
                 UPDATE GOAL 
                 SET Goal_Type = ?, Start_Date = ?, End_Date = ?, 
-                    Target_Calories = ?, Target_Protein = ?, Target_Carbs = ?, Target_Fat = ?
+                    Target_Calories = ?, Target_Protein = ?, Target_Carbs = ?, Target_Fat = ?,
+                    desired_weight = ?, start_weight = ?, number_of_meals_per_day = ?, activity_status_per_day = ?
                 WHERE GID = ?
             `;
-            
-            db.run(query, [goalType, startDate, endDate, targetCalories, 
-                          targetProtein, targetCarbs, targetFat, gid], function(err) {
+
+            db.run(query, [goalType, startDate, endDate, targetCalories,
+                targetProtein, targetCarbs, targetFat, desiredWeight, startWeight, numberOfMealsPerDay, activityStatusPerDay, gid
+            ], function(err) {
                 if (err) reject(err);
                 resolve(this.changes > 0);
             });
@@ -102,4 +105,4 @@ class Goal {
     }
 }
 
-module.exports = Goal; 
+module.exports = Goal;
