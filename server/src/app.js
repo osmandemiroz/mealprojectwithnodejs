@@ -24,5 +24,5 @@ app.use("/api", alignsWithRoutes);
 app.use("/api/creates-saves", createsSavesRoutes);
 app.use("/api/manages", managesRoutes);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

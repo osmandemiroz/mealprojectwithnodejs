@@ -111,6 +111,33 @@ class UserController {
             res.status(500).json({ message: 'Error fetching managed users', error: error.message });
         }
     }
+
+    static async login(req, res) {
+        try {
+            const { email, password } = req.body;
+            
+            // Validate required fields
+            if (!email || !password) {
+                return res.status(400).json({ message: 'Email and password are required' });
+            }
+
+            // Attempt login
+            const user = await UserService.login(email, password);
+            
+            // Remove sensitive information before sending response
+            const { password: _, ...userWithoutPassword } = user;
+            
+            res.json({
+                message: 'Login successful',
+                user: userWithoutPassword
+            });
+        } catch (error) {
+            if (error.message === 'Invalid email or password') {
+                return res.status(401).json({ message: error.message });
+            }
+            res.status(500).json({ message: 'Error during login', error: error.message });
+        }
+    }
 }
 
 module.exports = UserController; 

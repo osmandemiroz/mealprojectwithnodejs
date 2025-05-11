@@ -114,6 +114,21 @@ class UserService {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
+
+    static async login(email, password) {
+        // Validate input
+        if (!email || !password) {
+            throw new Error('Email and password are required');
+        }
+
+        // Attempt to find user with matching credentials
+        const user = await User.login(email, password);
+        if (!user) {
+            throw new Error('Invalid email or password');
+        }
+
+        return user;
+    }
 }
 
 module.exports = UserService; 
