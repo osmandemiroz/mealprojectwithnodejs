@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 
 import 'constants/app_theme.dart';
 import 'providers/app_state.dart';
+import 'services/auth_service.dart';
+import 'views/auth/login_screen.dart';
 import 'views/home/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set preferred orientations
@@ -35,21 +37,37 @@ void main() {
     SystemUiMode.edgeToEdge,
   );
 
-  runApp(const MyApp());
+  // Initialize auth service
+  final authService = AuthService();
+  await authService.init();
+
+  runApp(MyApp(authService: authService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthService authService;
+
+  const MyApp({super.key, required this.authService});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppState(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AppState>(create: (_) => AppState()),
+        ChangeNotifierProvider<AuthService>.value(value: authService),
+      ],
       child: MaterialApp(
         title: 'Meal Planner',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const HomeScreen(),
+        // Show login screen if not authenticated, otherwise show home screen
+        home: authService.isAuthenticated
+            ? const HomeScreen()
+            : const LoginScreen(),
+        routes: {
+          '/home': (context) => const HomeScreen(),
+          '/login': (context) => const LoginScreen(),
+        },
       ),
     );
   }
