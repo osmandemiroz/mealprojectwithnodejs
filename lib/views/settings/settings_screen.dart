@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+
 import '../../constants/app_theme.dart';
+import '../../services/auth_service.dart';
+import 'profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Get the auth service
+    final authService = Provider.of<AuthService>(context, listen: false);
+
     return ListView(
       padding: const EdgeInsets.all(AppTheme.spacing16),
       children: [
@@ -19,7 +26,11 @@ class SettingsScreen extends StatelessWidget {
               title: 'Profile',
               subtitle: 'Manage your personal information',
               onTap: () {
-                // TODO: Navigate to profile settings
+                // Navigate to profile screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
               },
             ),
             _buildSettingsTile(
@@ -110,8 +121,37 @@ class SettingsScreen extends StatelessWidget {
         // Sign Out Button
         Center(
           child: TextButton(
-            onPressed: () {
-              // TODO: Implement sign out
+            onPressed: () async {
+              // Show confirmation dialog
+              final bool? confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Sign Out'),
+                  content: const Text('Are you sure you want to sign out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Sign Out'),
+                    ),
+                  ],
+                ),
+              );
+
+              // If confirmed, sign out and navigate to login
+              if (confirm == true) {
+                await authService.logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (route) => false,
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.errorColor,

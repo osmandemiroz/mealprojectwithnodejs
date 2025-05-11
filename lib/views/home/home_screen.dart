@@ -4,6 +4,7 @@ import '../../constants/app_theme.dart';
 import '../grocery/grocery_list_screen.dart';
 import '../meal_plan/meal_plan_screen.dart';
 import '../recipes/recipes_screen.dart';
+import '../settings/profile_screen.dart';
 import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -54,7 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                   icon: const Icon(Icons.person_outline),
                   onPressed: () {
-                    // TODO: Implement profile
+                    // Navigate to profile screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
                   },
                 ),
               ],

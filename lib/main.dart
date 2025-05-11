@@ -12,7 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
+  SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
@@ -33,7 +33,7 @@ void main() async {
   );
 
   // Enable edge-to-edge for both platforms
-  await SystemChrome.setEnabledSystemUIMode(
+  SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
   );
 
@@ -45,8 +45,9 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({required this.authService, super.key});
   final AuthService authService;
+
+  const MyApp({super.key, required this.authService});
 
   @override
   Widget build(BuildContext context) {

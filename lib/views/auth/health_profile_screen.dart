@@ -24,8 +24,8 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
   final List<String> _selectedAllergies = [];
 
   // Default values for number pickers
-  double _weight = 70;
-  double _height = 170;
+  double _weight = 70.0;
+  double _height = 170.0;
   int _age = 30;
 
   final List<String> _genderOptions = [
@@ -44,7 +44,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
       'Cashews',
       'Pistachios',
       'Sesame',
-      'Sunflower seeds',
+      'Sunflower seeds'
     ],
     'Seafood': [
       'Fish',
@@ -53,7 +53,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
       'Crab',
       'Lobster',
       'Clams',
-      'Mussels',
+      'Mussels'
     ],
     'Grains': ['Wheat', 'Gluten', 'Barley', 'Rye', 'Oats', 'Corn'],
     'Fruits & Vegetables': [
@@ -62,9 +62,9 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
       'Avocado',
       'Citrus fruits',
       'Strawberries',
-      'Tomatoes',
+      'Tomatoes'
     ],
-    'Other': ['Sulfites', 'MSG', 'Food colorings', 'Preservatives', 'None'],
+    'Other': ['Sulfites', 'MSG', 'Food colorings', 'Preservatives', 'None']
   };
 
   // Track expanded categories
@@ -99,8 +99,8 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(20.0),
+          topRight: Radius.circular(20.0),
         ),
       ),
       builder: (BuildContext context) {
@@ -231,10 +231,8 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
 
       if (success && mounted) {
         // Navigate to home screen
-        unawaited(
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil('/home', (route) => false),
-        );
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil('/home', (route) => false);
       }
     }
   }
@@ -249,10 +247,8 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: AppTheme.textPrimaryColor,
-          ),
+          icon: const Icon(Icons.arrow_back_ios,
+              color: AppTheme.textPrimaryColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -385,7 +381,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
                                 },
                                 child: Padding(
                                   padding:
-                                      const EdgeInsets.symmetric(vertical: 8),
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Row(
                                     children: [
                                       Icon(
@@ -411,9 +407,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
                               if (isExpanded)
                                 Padding(
                                   padding: const EdgeInsets.only(
-                                    left: 16,
-                                    bottom: 8,
-                                  ),
+                                      left: 16.0, bottom: 8.0),
                                   child: Wrap(
                                     spacing: AppTheme.spacing8,
                                     runSpacing: AppTheme.spacing8,
@@ -428,9 +422,8 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
                                             if (allergy == 'None') {
                                               // If 'None' is selected, clear other selections
                                               if (!isSelected) {
-                                                _selectedAllergies
-                                                  ..clear()
-                                                  ..add('None');
+                                                _selectedAllergies.clear();
+                                                _selectedAllergies.add('None');
                                               } else {
                                                 _selectedAllergies
                                                     .remove('None');
@@ -455,7 +448,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
                                 ),
                             ],
                           );
-                        }),
+                        }).toList(),
                       ],
                     ),
                   ),
@@ -514,12 +507,10 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            AppTheme.borderRadiusMedium,
-                          ),
+                              AppTheme.borderRadiusMedium),
                         ),
                         padding: const EdgeInsets.symmetric(
-                          vertical: AppTheme.spacing16,
-                        ),
+                            vertical: AppTheme.spacing16),
                       ),
                       child: authService.isLoading
                           ? const SizedBox(
@@ -615,9 +606,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(
-          right: AppTheme.spacing8,
-          bottom: AppTheme.spacing8,
-        ),
+            right: AppTheme.spacing8, bottom: AppTheme.spacing8),
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacing16,
           vertical: AppTheme.spacing8,
@@ -627,6 +616,7 @@ class _HealthProfileScreenState extends State<HealthProfileScreen>
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
           border: Border.all(
             color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+            width: 1,
           ),
         ),
         child: Text(
