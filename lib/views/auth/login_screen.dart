@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_instance_creation
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -54,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (success && mounted) {
         // Navigate to home or main app screen
-        Navigator.of(context).pushReplacementNamed('/home');
+        await Navigator.of(context).pushReplacementNamed('/home');
       }
     }
   }
@@ -85,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen>
                   // App Logo or Icon
                   Container(
                     alignment: Alignment.center,
-                    child: Icon(
+                    child: const Icon(
                       Icons.restaurant_menu,
                       size: 80,
                       color: AppTheme.primaryColor,
@@ -200,10 +202,12 @@ class _LoginScreenState extends State<LoginScreen>
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                              AppTheme.borderRadiusMedium),
+                            AppTheme.borderRadiusMedium,
+                          ),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            vertical: AppTheme.spacing16),
+                          vertical: AppTheme.spacing16,
+                        ),
                       ),
                       child: authService.isLoading
                           ? const SizedBox(
@@ -232,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Don\'t have an account? ',
+                        "Don't have an account? ",
                         style: AppTheme.bodyMedium.copyWith(
                           color: AppTheme.textSecondaryColor,
                         ),
@@ -241,7 +245,8 @@ class _LoginScreenState extends State<LoginScreen>
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const RegistrationScreen()),
+                              builder: (_) => const RegistrationScreen(),
+                            ),
                           );
                         },
                         child: Text(

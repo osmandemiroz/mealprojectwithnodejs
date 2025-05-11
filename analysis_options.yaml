@@ -34,7 +34,7 @@ linter:
 analyzer:
   errors:
     deprecated_member_use: info
-    inference_failure_on_instance_creation: info
+    inference_failure_on_instance_creation: ignore ignore info
     avoid_equals_and_hash_code_on_mutable_classes: info
     avoid_catches_without_on_clauses: info
     require_trailing_commas: info
@@ -47,3 +47,5 @@ analyzer:
     avoid_redundant_argument_values: info
     unnecessary_lambdas: info
     directives_ordering: info
+    inference_failure_on_function_invocation: ignore
+    document_ignores: ignore

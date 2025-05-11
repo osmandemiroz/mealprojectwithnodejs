@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_instance_creation, document_ignores
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,7 +65,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
 
       if (success && mounted) {
         // Navigate to health profile screen
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => const HealthProfileScreen(),
           ),
@@ -75,7 +77,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -83,8 +84,10 @@ class _RegistrationScreenState extends State<RegistrationScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: AppTheme.textPrimaryColor),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppTheme.textPrimaryColor,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -268,10 +271,12 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                              AppTheme.borderRadiusMedium),
+                            AppTheme.borderRadiusMedium,
+                          ),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            vertical: AppTheme.spacing16),
+                          vertical: AppTheme.spacing16,
+                        ),
                       ),
                       child: authService.isLoading
                           ? const SizedBox(

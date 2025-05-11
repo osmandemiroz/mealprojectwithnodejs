@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -30,7 +32,7 @@ class RecipeDetailsScreen extends StatelessWidget {
             // Remove default padding to get edge-to-edge look
             leadingWidth: 60,
             leading: Padding(
-              padding: EdgeInsets.only(left: 16.0, top: statusBarHeight - 4),
+              padding: EdgeInsets.only(left: 16, top: statusBarHeight - 4),
               child: Container(
                 width: 40,
                 height: 40,

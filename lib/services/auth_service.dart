@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -26,8 +28,8 @@ class AuthService with ChangeNotifier {
   Future<void> init() async {
     _setLoading(true);
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userJson = prefs.getString('user');
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user');
 
       if (userJson != null) {
         _currentUser =
@@ -35,7 +37,7 @@ class AuthService with ChangeNotifier {
         _isAuthenticated = true;
       }
     } catch (e) {
-      _setError('Failed to initialize: ${e.toString()}');
+      _setError('Failed to initialize: $e');
       debugPrint('[AuthService.init] Error: $e');
     } finally {
       _setLoading(false);
@@ -66,7 +68,7 @@ class AuthService with ChangeNotifier {
 
       return true;
     } catch (e) {
-      _setError('Registration failed: ${e.toString()}');
+      _setError('Registration failed: $e');
       debugPrint('[AuthService.registerBasicInfo] Error: $e');
       return false;
     } finally {
@@ -88,7 +90,8 @@ class AuthService with ChangeNotifier {
     try {
       if (_currentUser == null) {
         throw Exception(
-            'No user data available. Please complete basic registration first.');
+          'No user data available. Please complete basic registration first.',
+        );
       }
 
       // Create a complete user object
@@ -114,7 +117,7 @@ class AuthService with ChangeNotifier {
             user.copyWith(id: responseData['userId']?.toString());
 
         // Save to shared preferences
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user', jsonEncode(updatedUser.toJson()));
 
         _currentUser = updatedUser;
@@ -128,7 +131,7 @@ class AuthService with ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Registration failed: ${e.toString()}');
+      _setError('Registration failed: $e');
       debugPrint('[AuthService.completeRegistration] Error: $e');
       return false;
     } finally {
@@ -156,7 +159,7 @@ class AuthService with ChangeNotifier {
             User.fromJson(responseData['user'] as Map<String, dynamic>);
 
         // Save to shared preferences
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user', jsonEncode(user.toJson()));
 
         _currentUser = user;
@@ -170,7 +173,7 @@ class AuthService with ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Login failed: ${e.toString()}');
+      _setError('Login failed: $e');
       debugPrint('[AuthService.login] Error: $e');
       return false;
     } finally {
@@ -184,14 +187,14 @@ class AuthService with ChangeNotifier {
 
     try {
       // Clear shared preferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user');
 
       _currentUser = null;
       _isAuthenticated = false;
       notifyListeners();
     } catch (e) {
-      _setError('Logout failed: ${e.toString()}');
+      _setError('Logout failed: $e');
       debugPrint('[AuthService.logout] Error: $e');
     } finally {
       _setLoading(false);

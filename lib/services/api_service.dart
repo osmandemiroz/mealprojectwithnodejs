@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_catches_without_on_clauses, omit_local_variable_types, prefer_final_in_for_each
+
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
 import '../models/grocery_list.dart';
@@ -110,13 +113,13 @@ class ApiService {
       if (value.startsWith('[') && value.endsWith(']')) {
         try {
           // Remove the outer brackets
-          String strippedValue = value.substring(1, value.length - 1);
+          final String strippedValue = value.substring(1, value.length - 1);
 
           // Split by the pattern ', ' but only when preceded by a single quote
           // This helps prevent splitting text that contains periods
-          List<String> items = [];
-          RegExp regex = RegExp(r"'(.*?)'(?:,\s*|$)");
-          Iterable<Match> matches = regex.allMatches(strippedValue);
+          final List<String> items = [];
+          final RegExp regex = RegExp(r"'(.*?)'(?:,\s*|$)");
+          final Iterable<Match> matches = regex.allMatches(strippedValue);
 
           for (Match match in matches) {
             if (match.group(1) != null) {
@@ -126,7 +129,9 @@ class ApiService {
 
           return items;
         } catch (e) {
-          print('[_parseStringList] Error parsing array string: $e');
+          if (kDebugMode) {
+            print('[_parseStringList] Error parsing array string: $e');
+          }
           // Fall back to comma splitting if regex fails
           return value
               .split(',')

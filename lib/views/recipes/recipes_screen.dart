@@ -86,12 +86,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
                 child: SearchBar(
                   controller: _searchController,
                   hintText: 'Search recipes...',
-                  hintStyle: MaterialStateProperty.all(
+                  hintStyle: WidgetStateProperty.all(
                     AppTheme.bodyLarge.copyWith(
                       color: AppTheme.textSecondaryColor,
                     ),
                   ),
-                  textStyle: MaterialStateProperty.all(
+                  textStyle: WidgetStateProperty.all(
                     AppTheme.bodyLarge,
                   ),
                   leading: const Icon(
@@ -118,14 +118,17 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       vertical: AppTheme.spacing12,
                     ),
                   ),
-                  elevation: MaterialStateProperty.all(0), // Remove shadow
-                  backgroundColor: MaterialStateProperty.all(
-                      Colors.transparent), // Transparent background
-                  shadowColor: MaterialStateProperty.all(
-                      Colors.transparent), // Remove shadow
-                  surfaceTintColor: MaterialStateProperty.all(
-                      Colors.transparent), // Remove tint
-                  side: MaterialStateProperty.all(
+                  elevation: WidgetStateProperty.all(0), // Remove shadow
+                  backgroundColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ), // Transparent background
+                  shadowColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ), // Remove shadow
+                  surfaceTintColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ), // Remove tint
+                  side: WidgetStateProperty.all(
                     BorderSide.none, // Remove border
                   ),
                   onChanged: (query) {
