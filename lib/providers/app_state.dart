@@ -594,7 +594,21 @@ class AppState extends ChangeNotifier {
   Future<void> loadGoals() async {
     _setLoading(true);
     try {
-      _goals = await _apiService.getGoals();
+      try {
+        // Try to load goals from API first
+        _goals = await _apiService.getGoals();
+      } catch (e) {
+        // If API fails, load from local storage
+        print('[loadGoals] API error, falling back to local storage: $e');
+        _goals = await _storageService.loadUserGoals();
+      }
+
+      // Also try to load the active goal
+      final activeGoal = await _storageService.loadActiveGoal();
+      if (activeGoal != null && !_goals.any((g) => g.id == activeGoal.id)) {
+        _goals = [..._goals, activeGoal];
+      }
+
       _error = null;
     } catch (e) {
       _error = 'Failed to load goals: $e';
@@ -606,8 +620,51 @@ class AppState extends ChangeNotifier {
   Future<void> addGoal(Goal goal) async {
     _setLoading(true);
     try {
-      final newGoal = await _apiService.createGoal(goal);
+      Goal newGoal;
+
+      try {
+        // Try to add goal via API first
+        newGoal = await _apiService.createGoal(goal);
+      } catch (e) {
+        // If API fails, create a local ID and use the provided goal
+        print('[addGoal] API error, using local storage only: $e');
+
+        // Create a local ID if not provided
+        if (goal.id.isEmpty) {
+          final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+          newGoal = Goal(
+            id: localId,
+            goalType: goal.goalType,
+            startDate: goal.startDate,
+            endDate: goal.endDate,
+            targetCalories: goal.targetCalories,
+            targetProtein: goal.targetProtein,
+            targetCarbs: goal.targetCarbs,
+            targetFat: goal.targetFat,
+            userId: goal.userId,
+            desiredWeight: goal.desiredWeight,
+            startWeight: goal.startWeight,
+            numberOfMealsPerDay: goal.numberOfMealsPerDay,
+            activityStatusPerDay: goal.activityStatusPerDay,
+          );
+        } else {
+          newGoal = goal;
+        }
+      }
+
+      // Update in-memory list of goals
       _goals = [..._goals, newGoal];
+
+      // Save to local storage
+      await _saveGoalsToLocalStorage();
+
+      // If this is the first goal or it's an active goal, set it as active
+      if (_goals.length == 1 ||
+          (newGoal.endDate.isAfter(DateTime.now()) &&
+              newGoal.startDate.isBefore(DateTime.now()))) {
+        await _storageService.saveActiveGoal(newGoal);
+      }
+
       _error = null;
     } catch (e) {
       _error = 'Failed to add goal: $e';
@@ -619,16 +676,66 @@ class AppState extends ChangeNotifier {
   Future<void> updateGoal(Goal goal) async {
     _setLoading(true);
     try {
-      final updatedGoal = await _apiService.updateGoal(goal);
+      Goal updatedGoal;
+
+      try {
+        // Try to update goal via API first
+        updatedGoal = await _apiService.updateGoal(goal);
+      } catch (e) {
+        // If API fails, just use the provided goal
+        print('[updateGoal] API error, using local storage only: $e');
+        updatedGoal = goal;
+      }
+
+      // Update in-memory list of goals
       _goals = [
         for (final g in _goals)
           if (g.id == updatedGoal.id) updatedGoal else g,
       ];
+
+      // Save to local storage
+      await _saveGoalsToLocalStorage();
+
+      // Update active goal if this is the active one
+      final activeGoal = await _storageService.loadActiveGoal();
+      if (activeGoal != null && activeGoal.id == updatedGoal.id) {
+        await _storageService.saveActiveGoal(updatedGoal);
+      }
+
       _error = null;
     } catch (e) {
       _error = 'Failed to update goal: $e';
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Save all goals to local storage
+  Future<void> _saveGoalsToLocalStorage() async {
+    try {
+      await _storageService.saveUserGoals(_goals);
+    } catch (e) {
+      print('[_saveGoalsToLocalStorage] Error saving goals: $e');
+    }
+  }
+
+  /// Set goal as active goal
+  Future<void> setActiveGoal(Goal goal) async {
+    try {
+      await _storageService.saveActiveGoal(goal);
+      notifyListeners();
+    } catch (e) {
+      print('[setActiveGoal] Error setting active goal: $e');
+    }
+  }
+
+  /// Get active goal
+  Future<Goal?> getActiveGoal() async {
+    try {
+      return await _storageService.loadActiveGoal();
+    } catch (e) {
+      print('[getActiveGoal] Error getting active goal: $e');
+      return null;
     }
   }
 

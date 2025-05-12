@@ -33,53 +33,6 @@ class SettingsScreen extends StatelessWidget {
                 );
               },
             ),
-            _buildSettingsTile(
-              icon: Icons.notifications_none,
-              title: 'Notifications',
-              subtitle: 'Configure your notification preferences',
-              onTap: () {
-                // TODO: Navigate to notification settings
-              },
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppTheme.spacing24),
-
-        // Preferences Section
-        _buildSection(
-          title: 'Preferences',
-          children: [
-            _buildSettingsTile(
-              icon: Icons.restaurant_menu,
-              title: 'Dietary Preferences',
-              subtitle: 'Set your dietary restrictions and preferences',
-              onTap: () {
-                // TODO: Navigate to dietary preferences
-              },
-            ),
-            _buildSettingsTile(
-              icon: Icons.people_outline,
-              title: 'Household Size',
-              subtitle: 'Adjust serving sizes for your household',
-              onTap: () {
-                // TODO: Navigate to household settings
-              },
-            ),
-            _buildSettingsTile(
-              icon: Icons.language,
-              title: 'Language',
-              subtitle: 'Change app language',
-              trailing: const Text(
-                'English',
-                style: TextStyle(
-                  color: AppTheme.textSecondaryColor,
-                ),
-              ),
-              onTap: () {
-                // TODO: Show language picker
-              },
-            ),
           ],
         ),
 
@@ -95,22 +48,6 @@ class SettingsScreen extends StatelessWidget {
               subtitle: 'Learn more about the app',
               onTap: () {
                 // TODO: Show about dialog
-              },
-            ),
-            _buildSettingsTile(
-              icon: Icons.star_border,
-              title: 'Rate App',
-              subtitle: 'Rate us on the App Store',
-              onTap: () {
-                // TODO: Open App Store
-              },
-            ),
-            _buildSettingsTile(
-              icon: Icons.privacy_tip_outlined,
-              title: 'Privacy Policy',
-              subtitle: 'Read our privacy policy',
-              onTap: () {
-                // TODO: Show privacy policy
               },
             ),
           ],

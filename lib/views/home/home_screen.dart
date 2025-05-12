@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_theme.dart';
+import '../../providers/app_state.dart';
 import '../goals/goal_screen.dart';
 import '../meal_plan/meal_plan_screen.dart';
 import '../recipes/recipes_screen.dart';
@@ -46,12 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    // TODO: Implement search
-                  },
-                ),
                 IconButton(
                   icon: const Icon(Icons.person_outline),
                   onPressed: () {
