@@ -120,22 +120,7 @@ class GoalService {
             errors.push('End date must be after start date');
         }
 
-        if (!goalData.targetCalories || goalData.targetCalories < 0) {
-            errors.push('Target calories must be a positive number');
-        }
-
-        if (!goalData.targetProtein || goalData.targetProtein < 0) {
-            errors.push('Target protein must be a positive number');
-        }
-
-        if (!goalData.targetCarbs || goalData.targetCarbs < 0) {
-            errors.push('Target carbs must be a positive number');
-        }
-
-        if (!goalData.targetFat || goalData.targetFat < 0) {
-            errors.push('Target fat must be a positive number');
-        }
-
+        
         return errors;
     }
 

@@ -34,7 +34,10 @@ const calculateDailyCalories = (weight, height, age, gender, activityLevel, desi
 const recommendRecipes = async (targetCaloriesPerMeal) => {
     return new Promise((resolve, reject) => {
         db.all(
-            `SELECT * FROM RECIPE WHERE calories BETWEEN ? AND ? LIMIT 3`,
+            `SELECT * FROM RECIPE 
+             WHERE calories BETWEEN ? AND ? 
+             ORDER BY RANDOM() 
+             LIMIT 3`,
             [targetCaloriesPerMeal - 100, targetCaloriesPerMeal + 100],
             (err, rows) => {
                 if (err) reject(err);
@@ -60,7 +63,7 @@ const generateMealPlanForUser = async (uid, gid) => {
     });
 
     const dailyCalories = calculateDailyCalories(
-        userData.Weight,
+        goalData.start_weight,
         userData.Height,
         userData.Age,
         userData.GENDER,

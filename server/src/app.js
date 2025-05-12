@@ -5,10 +5,7 @@ const cors = require("cors");
 const recipeRoutes = require("./routes/recipe.routes");
 const userRoutes = require("./src/routes/userRoutes");
 const goalRoutes = require("./src/routes/goalRoutes");
-const progressRoutes = require("./src/routes/progressRoutes");
-const alignsWithRoutes = require("./src/routes/alignsWithRoutes");
-const createsSavesRoutes = require("./src/routes/createsSaves.routes");
-const managesRoutes = require("./src/routes/manages.routes");
+const userMealPlanRoutes = require("./src/routes/userMealPlanRoutes");
 
 dotenv.config();
 const app = express();
@@ -19,10 +16,7 @@ app.use(express.json());
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api", goalRoutes);
-app.use("/api", progressRoutes);
-app.use("/api", alignsWithRoutes);
-app.use("/api/creates-saves", createsSavesRoutes);
-app.use("/api/manages", managesRoutes);
+app.use("/api", userMealPlanRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -4,8 +4,7 @@ const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes');
 const goalRoutes = require('./routes/goalRoutes');
 const recipeRoutes = require('./routes/recipeRoutes');
-const progressRoutes = require('./routes/progressRoutes');
-
+const userMealPlanRoutes = require('./routes/userMealPlanRoutes');
 dotenv.config();
 
 const app = express();
@@ -18,7 +17,7 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/recipes', recipeRoutes);
-app.use('/api/progress', progressRoutes);
+app.use('/api/userMealPlan', userMealPlanRoutes);
 
 const PORT = process.env.PORT || 3000;
 
