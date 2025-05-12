@@ -18,21 +18,90 @@ class RecipesScreen extends StatefulWidget {
   State<RecipesScreen> createState() => _RecipesScreenState();
 }
 
-class _RecipesScreenState extends State<RecipesScreen> {
+class _RecipesScreenState extends State<RecipesScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
+
+  int _currentTabIndex = 0;
+  final List<Tab> _tabs = [
+    const Tab(text: 'All Recipes'),
+    const Tab(text: 'Favorites'),
+    const Tab(text: 'Breakfast'),
+    const Tab(text: 'Lunch'),
+    const Tab(text: 'Dinner'),
+    const Tab(text: 'Snacks'),
+  ];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(_handleTabChange);
+
     // Load recipes when the screen is first created
     Future.microtask(() {
       context.read<AppState>().loadRecipes();
     });
   }
 
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging ||
+        _currentTabIndex != _tabController.index) {
+      setState(() {
+        _currentTabIndex = _tabController.index;
+        _updateFilters();
+      });
+    }
+  }
+
+  void _updateFilters() {
+    final appState = context.read<AppState>();
+
+    // Reset search and category filters
+    if (_searchController.text.isNotEmpty) {
+      _searchController.clear();
+      appState.setSearchQuery('');
+    }
+
+    if (appState.selectedCategory != 'All') {
+      appState.setSelectedCategory('All');
+    }
+
+    // Set favorite and meal type filters based on tab
+    switch (_currentTabIndex) {
+      case 0: // All Recipes
+        appState.setShowOnlyFavorites(false);
+        appState.setMealTypeFilter(MealType.any);
+        break;
+      case 1: // Favorites
+        appState.setShowOnlyFavorites(true);
+        appState.setMealTypeFilter(MealType.any);
+        break;
+      case 2: // Breakfast
+        appState.setShowOnlyFavorites(true);
+        appState.setMealTypeFilter(MealType.breakfast);
+        break;
+      case 3: // Lunch
+        appState.setShowOnlyFavorites(true);
+        appState.setMealTypeFilter(MealType.lunch);
+        break;
+      case 4: // Dinner
+        appState.setShowOnlyFavorites(true);
+        appState.setMealTypeFilter(MealType.dinner);
+        break;
+      case 5: // Snacks
+        appState.setShowOnlyFavorites(true);
+        appState.setMealTypeFilter(MealType.snack);
+        break;
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -77,167 +146,228 @@ class _RecipesScreenState extends State<RecipesScreen> {
         final isEmptyResults =
             appState.recipes.isNotEmpty && displayedRecipes.isEmpty;
 
-        return CustomScrollView(
-          slivers: [
-            // Search Bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacing16),
-                child: SearchBar(
-                  controller: _searchController,
-                  hintText: 'Search recipes...',
-                  hintStyle: WidgetStateProperty.all(
-                    AppTheme.bodyLarge.copyWith(
-                      color: AppTheme.textSecondaryColor,
-                    ),
+        // Show appropriate empty state message
+        String emptyStateMessage = '';
+        IconData emptyStateIcon = Icons.search_off;
+
+        if (isEmptyResults) {
+          if (_currentTabIndex == 0) {
+            // All recipes tab with search or category filter applied
+            if (appState.searchQuery.isNotEmpty) {
+              emptyStateMessage =
+                  'No recipes found for "${appState.searchQuery}"';
+              emptyStateIcon = Icons.search_off;
+            } else if (appState.selectedCategory != 'All') {
+              emptyStateMessage =
+                  'No recipes found in ${appState.selectedCategory} category';
+              emptyStateIcon = Icons.category;
+            }
+          } else if (_currentTabIndex == 1) {
+            // Favorites tab
+            emptyStateMessage =
+                'No favorite recipes yet.\nTap the heart icon on any recipe to add it to your favorites.';
+            emptyStateIcon = Icons.favorite_border;
+          } else {
+            // Meal type tabs
+            emptyStateMessage =
+                'No favorite ${_getMealTypeName(_currentTabIndex)} recipes yet';
+            emptyStateIcon = _getMealTypeIcon(_currentTabIndex);
+          }
+        }
+
+        return Column(
+          children: [
+            // Tab Bar
+            Material(
+              color: AppTheme.surfaceColor,
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabs: _tabs,
+                labelColor: AppTheme.primaryColor,
+                unselectedLabelColor: AppTheme.textSecondaryColor,
+                indicator: const UnderlineTabIndicator(
+                  borderSide: BorderSide(
+                    color: AppTheme.primaryColor,
+                    width: 2.0,
                   ),
-                  textStyle: WidgetStateProperty.all(
-                    AppTheme.bodyLarge,
-                  ),
-                  leading: const Icon(
-                    Icons.search,
-                    color: AppTheme.textSecondaryColor,
-                  ),
-                  trailing: appState.searchQuery.isNotEmpty
-                      ? [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.clear,
+                ),
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // Only show search and filters in the "All Recipes" tab
+                  if (_currentTabIndex == 0) ...[
+                    // Search Bar
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.spacing16),
+                        child: SearchBar(
+                          controller: _searchController,
+                          hintText: 'Search recipes...',
+                          hintStyle: WidgetStateProperty.all(
+                            AppTheme.bodyLarge.copyWith(
                               color: AppTheme.textSecondaryColor,
                             ),
-                            onPressed: () {
-                              _searchController.clear();
-                              appState.setSearchQuery('');
-                            },
                           ),
-                        ]
-                      : null,
-                  padding: WidgetStateProperty.all(
-                    const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacing16,
-                      vertical: AppTheme.spacing12,
+                          textStyle: WidgetStateProperty.all(
+                            AppTheme.bodyLarge,
+                          ),
+                          leading: const Icon(
+                            Icons.search,
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                          trailing: appState.searchQuery.isNotEmpty
+                              ? [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      appState.setSearchQuery('');
+                                    },
+                                  ),
+                                ]
+                              : null,
+                          padding: WidgetStateProperty.all(
+                            const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacing16,
+                              vertical: AppTheme.spacing12,
+                            ),
+                          ),
+                          elevation:
+                              WidgetStateProperty.all(0), // Remove shadow
+                          backgroundColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ), // Transparent background
+                          shadowColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ), // Remove shadow
+                          surfaceTintColor: WidgetStateProperty.all(
+                            Colors.transparent,
+                          ), // Remove tint
+                          side: WidgetStateProperty.all(
+                            BorderSide.none, // Remove border
+                          ),
+                          onChanged: (query) {
+                            // Implement search functionality
+                            appState.setSearchQuery(query);
+                          },
+                        ),
+                      ),
                     ),
-                  ),
-                  elevation: WidgetStateProperty.all(0), // Remove shadow
-                  backgroundColor: WidgetStateProperty.all(
-                    Colors.transparent,
-                  ), // Transparent background
-                  shadowColor: WidgetStateProperty.all(
-                    Colors.transparent,
-                  ), // Remove shadow
-                  surfaceTintColor: WidgetStateProperty.all(
-                    Colors.transparent,
-                  ), // Remove tint
-                  side: WidgetStateProperty.all(
-                    BorderSide.none, // Remove border
-                  ),
-                  onChanged: (query) {
-                    // Implement search functionality
-                    appState.setSearchQuery(query);
-                  },
-                ),
-              ),
-            ),
 
-            // Categories
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacing16,
-                  ),
-                  children: [
-                    _buildCategoryChip(
-                      'All',
-                      appState.selectedCategory == 'All',
+                    // Categories
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 40,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacing16,
+                          ),
+                          children: [
+                            _buildCategoryChip(
+                              'All',
+                              appState.selectedCategory == 'All',
+                            ),
+                            _buildCategoryChip(
+                              'breakfast-and-brunch',
+                              appState.selectedCategory ==
+                                  'breakfast-and-brunch',
+                            ),
+                            _buildCategoryChip(
+                              'appetizers-and-snacks',
+                              appState.selectedCategory ==
+                                  'appetizers-and-snacks',
+                            ),
+                            _buildCategoryChip(
+                              'desserts',
+                              appState.selectedCategory == 'desserts',
+                            ),
+                            _buildCategoryChip(
+                              'side-dish',
+                              appState.selectedCategory == 'side-dish',
+                            ),
+                            _buildCategoryChip(
+                              'meat-and-poultry',
+                              appState.selectedCategory == 'meat-and-poultry',
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    _buildCategoryChip(
-                      'breakfast-and-brunch',
-                      appState.selectedCategory == 'breakfast-and-brunch',
-                    ),
-                    _buildCategoryChip(
-                      'appetizers-and-snacks',
-                      appState.selectedCategory == 'appetizers-and-snacks',
-                    ),
-                    _buildCategoryChip(
-                      'desserts',
-                      appState.selectedCategory == 'desserts',
-                    ),
-                    _buildCategoryChip(
-                      'side-dish',
-                      appState.selectedCategory == 'side-dish',
-                    ),
-                    _buildCategoryChip(
-                      'meat-and-poultry',
-                      appState.selectedCategory == 'meat-and-poultry',
+
+                    const SliverPadding(
+                      padding: EdgeInsets.all(AppTheme.spacing8),
                     ),
                   ],
-                ),
-              ),
-            ),
 
-            const SliverPadding(
-              padding: EdgeInsets.all(AppTheme.spacing8),
-            ),
-
-            // Show empty results message if needed
-            if (isEmptyResults)
-              SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacing24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.search_off,
-                          size: 48,
-                          color: AppTheme.textSecondaryColor,
+                  // Show empty results message if needed
+                  if (isEmptyResults)
+                    SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppTheme.spacing24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                emptyStateIcon,
+                                size: 48,
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                              const SizedBox(height: AppTheme.spacing16),
+                              Text(
+                                emptyStateMessage,
+                                style: AppTheme.bodyLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: AppTheme.spacing16),
-                        Text(
-                          'No recipes found for "${appState.searchQuery}"',
-                          style: AppTheme.bodyLarge,
-                          textAlign: TextAlign.center,
+                      ),
+                    )
+                  else
+                    // Recipe Grid
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing16,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: AppTheme.spacing16,
+                          crossAxisSpacing: AppTheme.spacing16,
+                          childAspectRatio: 0.73,
                         ),
-                      ],
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final recipe = displayedRecipes[index];
+                            return Hero(
+                              tag: 'recipe_image_${recipe.id}',
+                              child: RecipeCard(
+                                recipe: recipe,
+                                onTap: () => _navigateToRecipeDetails(recipe),
+                              ),
+                            );
+                          },
+                          childCount: displayedRecipes.length,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              )
-            else
-              // Recipe Grid
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing16,
-                ),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: AppTheme.spacing16,
-                    crossAxisSpacing: AppTheme.spacing16,
-                    childAspectRatio: 0.73,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final recipe = displayedRecipes[index];
-                      return Hero(
-                        tag: 'recipe_image_${recipe.id}',
-                        child: RecipeCard(
-                          recipe: recipe,
-                          onTap: () => _navigateToRecipeDetails(recipe),
-                        ),
-                      );
-                    },
-                    childCount: displayedRecipes.length,
-                  ),
-                ),
-              ),
 
-            const SliverPadding(
-              padding: EdgeInsets.all(AppTheme.spacing16),
+                  const SliverPadding(
+                    padding: EdgeInsets.all(AppTheme.spacing16),
+                  ),
+                ],
+              ),
             ),
           ],
         );
@@ -249,30 +379,58 @@ class _RecipesScreenState extends State<RecipesScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: AppTheme.spacing8),
       child: FilterChip(
-        label: Text(label),
         selected: isSelected,
+        label: Text(_formatCategoryName(label)),
+        backgroundColor: AppTheme.surfaceColor,
+        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+        checkmarkColor: AppTheme.primaryColor,
         onSelected: (selected) {
-          // Implement category filtering
-          if (selected) {
-            context.read<AppState>().setSelectedCategory(label);
-          }
+          context
+              .read<AppState>()
+              .setSelectedCategory(selected ? label : 'All');
         },
-        backgroundColor: AppTheme.backgroundColor,
-        selectedColor: AppTheme.primaryColor.withAlpha(26),
-        labelStyle: AppTheme.bodyMedium.copyWith(
-          color:
-              isSelected ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacing8,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
-          side: BorderSide(
-            color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-          ),
-        ),
       ),
     );
+  }
+
+  String _formatCategoryName(String name) {
+    return name
+        .split('-')
+        .map((word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '')
+        .join(' ');
+  }
+
+  // Helper for getting meal type name based on tab index
+  String _getMealTypeName(int tabIndex) {
+    switch (tabIndex) {
+      case 2:
+        return 'breakfast';
+      case 3:
+        return 'lunch';
+      case 4:
+        return 'dinner';
+      case 5:
+        return 'snack';
+      default:
+        return '';
+    }
+  }
+
+  // Helper for getting meal type icon based on tab index
+  IconData _getMealTypeIcon(int tabIndex) {
+    switch (tabIndex) {
+      case 2:
+        return Icons.wb_sunny;
+      case 3:
+        return Icons.wb_cloudy;
+      case 4:
+        return Icons.nights_stay;
+      case 5:
+        return Icons.cookie;
+      default:
+        return Icons.restaurant;
+    }
   }
 }

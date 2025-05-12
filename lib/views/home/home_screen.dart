@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_theme.dart';
-import '../grocery/grocery_list_screen.dart';
+import '../goals/goal_screen.dart';
 import '../meal_plan/meal_plan_screen.dart';
 import '../recipes/recipes_screen.dart';
 import '../settings/profile_screen.dart';
@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: const [
                 MealPlanScreen(),
                 RecipesScreen(),
-                GroceryListScreen(),
+                GoalScreen(),
                 SettingsScreen(),
               ],
             ),
@@ -113,8 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Recipes',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart),
-              label: 'Grocery',
+              icon: Icon(Icons.emoji_events),
+              label: 'Goals',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),
@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return 'Recipes';
       case 2:
-        return 'Grocery List';
+        return 'Goals';
       case 3:
         return 'Settings';
       default:

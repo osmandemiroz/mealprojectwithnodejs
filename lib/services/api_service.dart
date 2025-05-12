@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
+import '../models/goal.dart';
 import '../models/grocery_list.dart';
 import '../models/meal_plan.dart';
+import '../models/progress.dart';
 import '../models/recipe.dart';
 
 class ApiService {
@@ -278,5 +280,120 @@ class ApiService {
       );
     }
     throw Exception('Failed to update grocery list');
+  }
+
+  // Goal endpoints
+  Future<List<Goal>> getGoals() async {
+    // Get current user ID from auth service
+    const String userId = '1'; // Replace with actual user ID from auth
+
+    final response =
+        await _client.get(Uri.parse('$baseUrl/users/$userId/goals'));
+    if (response.statusCode == 200) {
+      final jsonList = json.decode(response.body) as List<dynamic>;
+      return jsonList
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Failed to load goals');
+  }
+
+  Future<Goal> getGoal(String id) async {
+    final response = await _client.get(Uri.parse('$baseUrl/goals/$id'));
+    if (response.statusCode == 200) {
+      return Goal.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to load goal');
+  }
+
+  Future<Goal> createGoal(Goal goal) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/users/${goal.userId}/goals'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(goal.toJson()),
+    );
+    if (response.statusCode == 201) {
+      return Goal.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to create goal');
+  }
+
+  Future<Goal> updateGoal(Goal goal) async {
+    final response = await _client.put(
+      Uri.parse('$baseUrl/goals/${goal.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(goal.toJson()),
+    );
+    if (response.statusCode == 200) {
+      return Goal.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to update goal');
+  }
+
+  // Progress endpoints
+  Future<List<Progress>> getProgressEntries() async {
+    // Get current user ID from auth service
+    const String userId = '1'; // Replace with actual user ID from auth
+
+    final response =
+        await _client.get(Uri.parse('$baseUrl/users/$userId/progress'));
+    if (response.statusCode == 200) {
+      final jsonList = json.decode(response.body) as List<dynamic>;
+      return jsonList
+          .map((json) => Progress.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Failed to load progress entries');
+  }
+
+  Future<Progress> getProgressEntry(String goalId) async {
+    // Get current user ID from auth service
+    const String userId = '1'; // Replace with actual user ID from auth
+
+    final response = await _client.get(
+      Uri.parse('$baseUrl/users/$userId/goals/$goalId/progress'),
+    );
+    if (response.statusCode == 200) {
+      return Progress.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to load progress entry');
+  }
+
+  Future<Progress> createProgressEntry(Progress progress) async {
+    final response = await _client.post(
+      Uri.parse(
+          '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(progress.toJson()),
+    );
+    if (response.statusCode == 201) {
+      return Progress.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to create progress entry');
+  }
+
+  Future<Progress> updateProgressEntry(Progress progress) async {
+    final response = await _client.put(
+      Uri.parse(
+          '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(progress.toJson()),
+    );
+    if (response.statusCode == 200) {
+      return Progress.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+    throw Exception('Failed to update progress entry');
   }
 }

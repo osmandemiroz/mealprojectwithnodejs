@@ -3,11 +3,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_theme.dart';
 import '../../models/recipe.dart';
+import '../../providers/app_state.dart';
 
-class RecipeDetailsScreen extends StatelessWidget {
+class RecipeDetailsScreen extends StatefulWidget {
   const RecipeDetailsScreen({
     required this.recipe,
     super.key,
@@ -16,8 +18,22 @@ class RecipeDetailsScreen extends StatelessWidget {
   final Recipe recipe;
 
   @override
+  State<RecipeDetailsScreen> createState() => _RecipeDetailsScreenState();
+}
+
+class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
+  bool _isSavingFavorite = false;
+
+  @override
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
+    final appState = Provider.of<AppState>(context);
+
+    // Get the current version of the recipe from app state (for favorite status)
+    final currentRecipe = appState.recipes.firstWhere(
+      (r) => r.id == widget.recipe.id,
+      orElse: () => widget.recipe,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -51,14 +67,66 @@ class RecipeDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
+            actions: [
+              // Favorite button
+              Padding(
+                padding: EdgeInsets.only(right: 16, top: statusBarHeight - 4),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: _isSavingFavorite
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            currentRecipe.isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: currentRecipe.isFavorite
+                                ? Colors.red
+                                : Colors.white,
+                            size: 22,
+                          ),
+                    onPressed: _isSavingFavorite
+                        ? null
+                        : () async {
+                            // Show saving indicator
+                            setState(() => _isSavingFavorite = true);
+
+                            // Toggle favorite
+                            await appState.toggleFavorite(widget.recipe.id);
+
+                            // Hide indicator after a short delay
+                            await Future.delayed(
+                                const Duration(milliseconds: 300));
+
+                            if (mounted) {
+                              setState(() => _isSavingFavorite = false);
+                            }
+                          },
+                  ),
+                ),
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               // Remove any default padding
               titlePadding: EdgeInsets.zero,
               // Make the image take the full width and height including status bar
               background: Hero(
-                tag: 'recipe_image_${recipe.id}',
+                tag: 'recipe_image_${widget.recipe.id}',
                 child: CachedNetworkImage(
-                  imageUrl: recipe.imageUrl,
+                  imageUrl: widget.recipe.imageUrl,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => const Center(
                     child: CircularProgressIndicator(),
@@ -82,7 +150,7 @@ class RecipeDetailsScreen extends StatelessWidget {
                 children: [
                   // Recipe Name
                   Text(
-                    recipe.name,
+                    widget.recipe.name,
                     style: AppTheme.displaySmall.copyWith(
                       color: AppTheme.textPrimaryColor,
                     ),
@@ -92,11 +160,17 @@ class RecipeDetailsScreen extends StatelessWidget {
 
                   // Recipe Description
                   Text(
-                    recipe.description,
+                    widget.recipe.description,
                     style: AppTheme.bodyLarge.copyWith(
                       color: AppTheme.textSecondaryColor,
                     ),
                   ).animate().fadeIn().slideX(),
+
+                  // Meal type selection (only shown if recipe is favorited)
+                  if (currentRecipe.isFavorite) ...[
+                    const SizedBox(height: AppTheme.spacing16),
+                    _buildMealTypeSelector(context, currentRecipe, appState),
+                  ],
 
                   const SizedBox(height: AppTheme.spacing16),
 
@@ -107,8 +181,8 @@ class RecipeDetailsScreen extends StatelessWidget {
                         child: _buildInfoChip(
                           icon: Icons.timer_outlined,
                           label: 'Prep Time',
-                          value: recipe.preparationTime > 0
-                              ? '${recipe.preparationTime} min'
+                          value: widget.recipe.preparationTime > 0
+                              ? '${widget.recipe.preparationTime} min'
                               : '0 min',
                         ),
                       ),
@@ -117,8 +191,8 @@ class RecipeDetailsScreen extends StatelessWidget {
                         child: _buildInfoChip(
                           icon: Icons.local_fire_department_outlined,
                           label: 'Calories',
-                          value: recipe.calories > 0
-                              ? '${recipe.calories} kcal'
+                          value: widget.recipe.calories > 0
+                              ? '${widget.recipe.calories} kcal'
                               : '0 kcal',
                         ),
                       ),
@@ -127,7 +201,7 @@ class RecipeDetailsScreen extends StatelessWidget {
                         child: _buildInfoChip(
                           icon: Icons.people_outline,
                           label: 'Servings',
-                          value: '${recipe.servings}',
+                          value: '${widget.recipe.servings}',
                         ),
                       ),
                     ],
@@ -145,7 +219,7 @@ class RecipeDetailsScreen extends StatelessWidget {
 
                   const SizedBox(height: AppTheme.spacing12),
 
-                  ...recipe.ingredients.map((ingredient) {
+                  ...widget.recipe.ingredients.map((ingredient) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppTheme.spacing8),
                       child: Row(
@@ -180,7 +254,7 @@ class RecipeDetailsScreen extends StatelessWidget {
                   const SizedBox(height: AppTheme.spacing12),
 
                   // Process all instructions and split into individual sentences
-                  ..._getAllInstructionSentences(recipe.instructions)
+                  ..._getAllInstructionSentences(widget.recipe.instructions)
                       .asMap()
                       .entries
                       .map((entry) {
@@ -231,18 +305,18 @@ class RecipeDetailsScreen extends StatelessWidget {
 
                   const SizedBox(height: AppTheme.spacing12),
 
-                  ...recipe.nutrients.entries.map((entry) {
+                  ...widget.recipe.nutrients.entries.map((entry) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppTheme.spacing8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            entry.key,
+                            _formatNutrientName(entry.key),
                             style: AppTheme.bodyLarge,
                           ),
                           Text(
-                            '${entry.value}g',
+                            '${entry.value.toStringAsFixed(1)}g',
                             style: AppTheme.bodyLarge.copyWith(
                               color: AppTheme.textSecondaryColor,
                             ),
@@ -268,6 +342,120 @@ class RecipeDetailsScreen extends StatelessWidget {
     );
   }
 
+  /// Creates a meal type selector for favorited recipes
+  Widget _buildMealTypeSelector(
+      BuildContext context, Recipe currentRecipe, AppState appState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Meal Type',
+          style: AppTheme.bodyLarge.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacing8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildMealTypeChip(
+                context: context,
+                type: MealType.breakfast,
+                currentType: currentRecipe.mealType,
+                onSelected: (selected) {
+                  if (selected) {
+                    appState.updateRecipeMealType(
+                      currentRecipe.id,
+                      MealType.breakfast,
+                    );
+                  }
+                },
+              ),
+              _buildMealTypeChip(
+                context: context,
+                type: MealType.lunch,
+                currentType: currentRecipe.mealType,
+                onSelected: (selected) {
+                  if (selected) {
+                    appState.updateRecipeMealType(
+                      currentRecipe.id,
+                      MealType.lunch,
+                    );
+                  }
+                },
+              ),
+              _buildMealTypeChip(
+                context: context,
+                type: MealType.dinner,
+                currentType: currentRecipe.mealType,
+                onSelected: (selected) {
+                  if (selected) {
+                    appState.updateRecipeMealType(
+                      currentRecipe.id,
+                      MealType.dinner,
+                    );
+                  }
+                },
+              ),
+              _buildMealTypeChip(
+                context: context,
+                type: MealType.snack,
+                currentType: currentRecipe.mealType,
+                onSelected: (selected) {
+                  if (selected) {
+                    appState.updateRecipeMealType(
+                      currentRecipe.id,
+                      MealType.snack,
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).animate().fadeIn();
+  }
+
+  /// Creates a selectable chip for meal type selection
+  Widget _buildMealTypeChip({
+    required BuildContext context,
+    required MealType type,
+    required MealType currentType,
+    required Function(bool) onSelected,
+  }) {
+    final isSelected = type == currentType;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: AppTheme.spacing8),
+      child: FilterChip(
+        selected: isSelected,
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _getMealTypeIcon(type),
+              size: 16,
+              color: isSelected ? Colors.white : AppTheme.textPrimaryColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              type.name,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.textPrimaryColor,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.surfaceColor,
+        selectedColor: AppTheme.primaryColor,
+        checkmarkColor: Colors.white,
+        onSelected: onSelected,
+      ),
+    );
+  }
+
   Widget _buildInfoChip({
     required IconData icon,
     required String label,
@@ -276,17 +464,21 @@ class RecipeDetailsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing12),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+        border: Border.all(
+          color: AppTheme.borderColor,
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
           Icon(
             icon,
-            size: 24,
             color: AppTheme.primaryColor,
+            size: 24,
           ),
-          const SizedBox(height: AppTheme.spacing4),
+          const SizedBox(height: AppTheme.spacing8),
           Text(
             label,
             style: AppTheme.bodySmall.copyWith(
@@ -296,9 +488,8 @@ class RecipeDetailsScreen extends StatelessWidget {
           const SizedBox(height: AppTheme.spacing4),
           Text(
             value,
-            style: AppTheme.bodyMedium.copyWith(
-              color: AppTheme.textPrimaryColor,
-              fontWeight: FontWeight.w600,
+            style: AppTheme.bodyLarge.copyWith(
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -306,45 +497,51 @@ class RecipeDetailsScreen extends StatelessWidget {
     );
   }
 
-  // Helper method to split all instructions into individual sentences
   List<String> _getAllInstructionSentences(List<String> instructions) {
-    final allSentences = <String>[];
-
+    final sentences = <String>[];
     for (final instruction in instructions) {
-      // Process each instruction paragraph
-      final sentences = _splitIntoSentences(instruction);
-      allSentences.addAll(sentences);
+      // Some APIs provide instructions as single sentences, others as paragraphs
+      if (instruction.contains('.') &&
+          !instruction.trim().endsWith('.') &&
+          instruction.length > 100) {
+        // It's a paragraph with multiple sentences
+        final splits = instruction.split('.');
+        for (final split in splits) {
+          if (split.trim().isNotEmpty) {
+            sentences.add('${split.trim()}.');
+          }
+        }
+      } else {
+        // It's a single instruction
+        sentences.add(instruction);
+      }
     }
-
-    return allSentences;
+    return sentences;
   }
 
-  // Helper method to split instructions into sentences
-  List<String> _splitIntoSentences(String text) {
-    // First try to split by '. ' but preserve periods in abbreviations like "e.g." or numbers like "1.5"
-    final result = <String>[];
+  String _formatNutrientName(String name) {
+    // Capitalize first letter of each word
+    return name
+        .split('_')
+        .map((word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '')
+        .join(' ');
+  }
 
-    // This regex looks for '. ' but not when preceded by a single letter or a number
-    final pattern = RegExp(r'(?<!\s[A-Za-z]|[0-9])\.\s+');
-
-    final parts = text.split(pattern);
-    for (var i = 0; i < parts.length; i++) {
-      var part = parts[i].trim();
-
-      // Add the period back for all but the last part if it doesn't already end with punctuation
-      if (i < parts.length - 1 &&
-          !part.endsWith('.') &&
-          !part.endsWith('!') &&
-          !part.endsWith('?')) {
-        part = '$part.';
-      }
-
-      if (part.isNotEmpty) {
-        result.add(part);
-      }
+  // Helper to get appropriate icon for each meal type
+  IconData _getMealTypeIcon(MealType mealType) {
+    switch (mealType) {
+      case MealType.breakfast:
+        return Icons.wb_sunny;
+      case MealType.lunch:
+        return Icons.wb_cloudy;
+      case MealType.dinner:
+        return Icons.nights_stay;
+      case MealType.snack:
+        return Icons.cookie;
+      case MealType.any:
+        return Icons.restaurant;
     }
-
-    // If no sentences were found or just one, return the original text as a single sentence
-    return result.isEmpty ? [text] : result;
   }
 }

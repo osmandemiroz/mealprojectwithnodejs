@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'constants/app_theme.dart';
 import 'providers/app_state.dart';
 import 'services/auth_service.dart';
+import 'services/storage_service.dart';
 import 'views/auth/login_screen.dart';
 import 'views/home/home_screen.dart';
 
@@ -37,23 +38,36 @@ void main() async {
     SystemUiMode.edgeToEdge,
   );
 
-  // Initialize auth service
+  // Initialize services
   final authService = AuthService();
   await authService.init();
 
-  runApp(MyApp(authService: authService));
+  final storageService = StorageService();
+  await storageService.init();
+
+  runApp(MyApp(
+    authService: authService,
+    storageService: storageService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final AuthService authService;
+  final StorageService storageService;
 
-  const MyApp({super.key, required this.authService});
+  const MyApp({
+    super.key,
+    required this.authService,
+    required this.storageService,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<AppState>(create: (_) => AppState()),
+        ChangeNotifierProvider<AppState>(
+          create: (_) => AppState(storageService: storageService),
+        ),
         ChangeNotifierProvider<AuthService>.value(value: authService),
       ],
       child: MaterialApp(
