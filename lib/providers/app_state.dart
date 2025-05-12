@@ -10,6 +10,27 @@ import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 
+/// Enum to define filter modes for numeric ranges
+enum FilterMode {
+  less,
+  exactly,
+  more,
+}
+
+/// Extension on FilterMode to get display text
+extension FilterModeExtension on FilterMode {
+  String get label {
+    switch (this) {
+      case FilterMode.less:
+        return 'Less than';
+      case FilterMode.exactly:
+        return 'Exactly';
+      case FilterMode.more:
+        return 'More than';
+    }
+  }
+}
+
 class AppState extends ChangeNotifier {
   AppState({
     ApiService? apiService,
@@ -36,6 +57,32 @@ class AppState extends ChangeNotifier {
   bool _showOnlyFavorites = false;
   MealType _selectedMealTypeFilter = MealType.any;
 
+  // Advanced filter states
+  bool _advancedFiltersActive = false;
+
+  // Calories filter
+  bool _caloriesFilterActive = false;
+  int _caloriesValue = 500;
+  FilterMode _caloriesFilterMode = FilterMode.less;
+
+  // Preparation time filter
+  bool _prepTimeFilterActive = false;
+  int _prepTimeValue = 30;
+  FilterMode _prepTimeFilterMode = FilterMode.less;
+
+  // Nutrients filters
+  bool _proteinFilterActive = false;
+  double _proteinValue = 20.0;
+  FilterMode _proteinFilterMode = FilterMode.more;
+
+  bool _carbsFilterActive = false;
+  double _carbsValue = 30.0;
+  FilterMode _carbsFilterMode = FilterMode.less;
+
+  bool _fatFilterActive = false;
+  double _fatValue = 10.0;
+  FilterMode _fatFilterMode = FilterMode.less;
+
   // Getters
   List<Recipe> get recipes => _recipes;
   List<MealPlan> get mealPlans => _mealPlans;
@@ -48,6 +95,29 @@ class AppState extends ChangeNotifier {
   String get selectedCategory => _selectedCategory;
   bool get showOnlyFavorites => _showOnlyFavorites;
   MealType get selectedMealTypeFilter => _selectedMealTypeFilter;
+
+  // Advanced filters getters
+  bool get advancedFiltersActive => _advancedFiltersActive;
+
+  bool get caloriesFilterActive => _caloriesFilterActive;
+  int get caloriesValue => _caloriesValue;
+  FilterMode get caloriesFilterMode => _caloriesFilterMode;
+
+  bool get prepTimeFilterActive => _prepTimeFilterActive;
+  int get prepTimeValue => _prepTimeValue;
+  FilterMode get prepTimeFilterMode => _prepTimeFilterMode;
+
+  bool get proteinFilterActive => _proteinFilterActive;
+  double get proteinValue => _proteinValue;
+  FilterMode get proteinFilterMode => _proteinFilterMode;
+
+  bool get carbsFilterActive => _carbsFilterActive;
+  double get carbsValue => _carbsValue;
+  FilterMode get carbsFilterMode => _carbsFilterMode;
+
+  bool get fatFilterActive => _fatFilterActive;
+  double get fatValue => _fatValue;
+  FilterMode get fatFilterMode => _fatFilterMode;
 
   // Get all favorite recipes
   List<Recipe> get favoriteRecipes =>
@@ -63,7 +133,7 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
-  // Get filtered recipes based on search query, category, favorites and meal type
+  // Get filtered recipes based on search query, category, favorites, meal type and advanced filters
   List<Recipe> get filteredRecipes {
     return _recipes.where((recipe) {
       // Filter by favorites if enabled
@@ -86,7 +156,99 @@ class AppState extends ChangeNotifier {
       final matchesCategory = _selectedCategory == 'All' ||
           recipe.categories.contains(_selectedCategory);
 
-      return matchesSearch && matchesCategory;
+      // Apply advanced filters if active
+      bool passesAdvancedFilters = true;
+
+      if (_advancedFiltersActive) {
+        // Apply calories filter
+        if (_caloriesFilterActive) {
+          switch (_caloriesFilterMode) {
+            case FilterMode.less:
+              if (recipe.calories >= _caloriesValue)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.exactly:
+              if (recipe.calories != _caloriesValue)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.more:
+              if (recipe.calories <= _caloriesValue)
+                passesAdvancedFilters = false;
+              break;
+          }
+        }
+
+        // Apply prep time filter
+        if (passesAdvancedFilters && _prepTimeFilterActive) {
+          final totalPrepTime = recipe.preparationTime + recipe.cookingTime;
+          switch (_prepTimeFilterMode) {
+            case FilterMode.less:
+              if (totalPrepTime >= _prepTimeValue)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.exactly:
+              if (totalPrepTime != _prepTimeValue)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.more:
+              if (totalPrepTime <= _prepTimeValue)
+                passesAdvancedFilters = false;
+              break;
+          }
+        }
+
+        // Apply protein filter
+        if (passesAdvancedFilters && _proteinFilterActive) {
+          final protein = recipe.nutrients['protein'] ?? 0.0;
+          switch (_proteinFilterMode) {
+            case FilterMode.less:
+              if (protein >= _proteinValue) passesAdvancedFilters = false;
+              break;
+            case FilterMode.exactly:
+              if ((protein - _proteinValue).abs() > 0.1)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.more:
+              if (protein <= _proteinValue) passesAdvancedFilters = false;
+              break;
+          }
+        }
+
+        // Apply carbs filter
+        if (passesAdvancedFilters && _carbsFilterActive) {
+          final carbs = recipe.nutrients['carbohydrates'] ?? 0.0;
+          switch (_carbsFilterMode) {
+            case FilterMode.less:
+              if (carbs >= _carbsValue) passesAdvancedFilters = false;
+              break;
+            case FilterMode.exactly:
+              if ((carbs - _carbsValue).abs() > 0.1)
+                passesAdvancedFilters = false;
+              break;
+            case FilterMode.more:
+              if (carbs <= _carbsValue) passesAdvancedFilters = false;
+              break;
+          }
+        }
+
+        // Apply fat filter
+        if (passesAdvancedFilters && _fatFilterActive) {
+          final fat = recipe.nutrients['fat'] ?? 0.0;
+          switch (_fatFilterMode) {
+            case FilterMode.less:
+              if (fat >= _fatValue) passesAdvancedFilters = false;
+              break;
+            case FilterMode.exactly:
+              if ((fat - _fatValue).abs() > 0.1) passesAdvancedFilters = false;
+              break;
+            case FilterMode.more:
+              if (fat <= _fatValue) passesAdvancedFilters = false;
+              break;
+          }
+        }
+      }
+
+      return matchesSearch && matchesCategory && passesAdvancedFilters;
     }).toList();
   }
 
@@ -114,6 +276,91 @@ class AppState extends ChangeNotifier {
 
   void setMealTypeFilter(MealType mealType) {
     _selectedMealTypeFilter = mealType;
+    notifyListeners();
+  }
+
+  // Advanced filter methods
+  void setAdvancedFiltersActive(bool active) {
+    _advancedFiltersActive = active;
+    notifyListeners();
+  }
+
+  void toggleAdvancedFilters() {
+    _advancedFiltersActive = !_advancedFiltersActive;
+    notifyListeners();
+  }
+
+  void resetAllFilters() {
+    _searchQuery = '';
+    _selectedCategory = 'All';
+    _showOnlyFavorites = false;
+    _selectedMealTypeFilter = MealType.any;
+    _advancedFiltersActive = false;
+    _caloriesFilterActive = false;
+    _prepTimeFilterActive = false;
+    _proteinFilterActive = false;
+    _carbsFilterActive = false;
+    _fatFilterActive = false;
+    notifyListeners();
+  }
+
+  // Calories filter methods
+  void setCaloriesFilter({
+    required bool active,
+    int? value,
+    FilterMode? mode,
+  }) {
+    _caloriesFilterActive = active;
+    if (value != null) _caloriesValue = value;
+    if (mode != null) _caloriesFilterMode = mode;
+    notifyListeners();
+  }
+
+  // Prep time filter methods
+  void setPrepTimeFilter({
+    required bool active,
+    int? value,
+    FilterMode? mode,
+  }) {
+    _prepTimeFilterActive = active;
+    if (value != null) _prepTimeValue = value;
+    if (mode != null) _prepTimeFilterMode = mode;
+    notifyListeners();
+  }
+
+  // Protein filter methods
+  void setProteinFilter({
+    required bool active,
+    double? value,
+    FilterMode? mode,
+  }) {
+    _proteinFilterActive = active;
+    if (value != null) _proteinValue = value;
+    if (mode != null) _proteinFilterMode = mode;
+    notifyListeners();
+  }
+
+  // Carbs filter methods
+  void setCarbsFilter({
+    required bool active,
+    double? value,
+    FilterMode? mode,
+  }) {
+    _carbsFilterActive = active;
+    if (value != null) _carbsValue = value;
+    if (mode != null) _carbsFilterMode = mode;
+    notifyListeners();
+  }
+
+  // Fat filter methods
+  void setFatFilter({
+    required bool active,
+    double? value,
+    FilterMode? mode,
+  }) {
+    _fatFilterActive = active;
+    if (value != null) _fatValue = value;
+    if (mode != null) _fatFilterMode = mode;
     notifyListeners();
   }
 

@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../../widgets/error_message.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/recipe_card.dart';
+import '../../widgets/recipe_filter_panel.dart';
 import 'recipe_details_screen.dart';
 
 class RecipesScreen extends StatefulWidget {
@@ -161,6 +162,9 @@ class _RecipesScreenState extends State<RecipesScreen>
               emptyStateMessage =
                   'No recipes found in ${appState.selectedCategory} category';
               emptyStateIcon = Icons.category;
+            } else if (appState.advancedFiltersActive) {
+              emptyStateMessage = 'No recipes match the current filters';
+              emptyStateIcon = Icons.filter_list_off;
             }
           } else if (_currentTabIndex == 1) {
             // Favorites tab
@@ -199,67 +203,127 @@ class _RecipesScreenState extends State<RecipesScreen>
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  // Only show search and filters in the "All Recipes" tab
+                  // Only show search, filters and advanced filter panel in the "All Recipes" tab
                   if (_currentTabIndex == 0) ...[
-                    // Search Bar
+                    // Search and Filter Controls Row
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(AppTheme.spacing16),
-                        child: SearchBar(
-                          controller: _searchController,
-                          hintText: 'Search recipes...',
-                          hintStyle: WidgetStateProperty.all(
-                            AppTheme.bodyLarge.copyWith(
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                          ),
-                          textStyle: WidgetStateProperty.all(
-                            AppTheme.bodyLarge,
-                          ),
-                          leading: const Icon(
-                            Icons.search,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                          trailing: appState.searchQuery.isNotEmpty
-                              ? [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.clear,
-                                      color: AppTheme.textSecondaryColor,
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      appState.setSearchQuery('');
-                                    },
+                        child: Row(
+                          children: [
+                            // Search Bar
+                            Expanded(
+                              child: SearchBar(
+                                controller: _searchController,
+                                hintText: 'Search recipes...',
+                                hintStyle: WidgetStateProperty.all(
+                                  AppTheme.bodyLarge.copyWith(
+                                    color: AppTheme.textSecondaryColor,
                                   ),
-                                ]
-                              : null,
-                          padding: WidgetStateProperty.all(
-                            const EdgeInsets.symmetric(
-                              horizontal: AppTheme.spacing16,
-                              vertical: AppTheme.spacing12,
+                                ),
+                                textStyle: WidgetStateProperty.all(
+                                  AppTheme.bodyLarge,
+                                ),
+                                leading: const Icon(
+                                  Icons.search,
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                                trailing: appState.searchQuery.isNotEmpty
+                                    ? [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.clear,
+                                            color: AppTheme.textSecondaryColor,
+                                          ),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            appState.setSearchQuery('');
+                                          },
+                                        ),
+                                      ]
+                                    : null,
+                                padding: WidgetStateProperty.all(
+                                  const EdgeInsets.symmetric(
+                                    horizontal: AppTheme.spacing16,
+                                    vertical: AppTheme.spacing12,
+                                  ),
+                                ),
+                                elevation:
+                                    WidgetStateProperty.all(0), // Remove shadow
+                                backgroundColor: WidgetStateProperty.all(
+                                  Colors.transparent,
+                                ), // Transparent background
+                                shadowColor: WidgetStateProperty.all(
+                                  Colors.transparent,
+                                ), // Remove shadow
+                                surfaceTintColor: WidgetStateProperty.all(
+                                  Colors.transparent,
+                                ), // Remove tint
+                                side: WidgetStateProperty.all(
+                                  BorderSide.none, // Remove border
+                                ),
+                                onChanged: (query) {
+                                  // Implement search functionality
+                                  appState.setSearchQuery(query);
+                                },
+                              ),
                             ),
-                          ),
-                          elevation:
-                              WidgetStateProperty.all(0), // Remove shadow
-                          backgroundColor: WidgetStateProperty.all(
-                            Colors.transparent,
-                          ), // Transparent background
-                          shadowColor: WidgetStateProperty.all(
-                            Colors.transparent,
-                          ), // Remove shadow
-                          surfaceTintColor: WidgetStateProperty.all(
-                            Colors.transparent,
-                          ), // Remove tint
-                          side: WidgetStateProperty.all(
-                            BorderSide.none, // Remove border
-                          ),
-                          onChanged: (query) {
-                            // Implement search functionality
-                            appState.setSearchQuery(query);
-                          },
+
+                            // Advanced Filter Toggle Button
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: AppTheme.spacing8,
+                              ),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                decoration: BoxDecoration(
+                                  color: appState.advancedFiltersActive
+                                      ? AppTheme.primaryColor
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppTheme.borderRadiusMedium,
+                                  ),
+                                ),
+                                child: IconButton(
+                                  icon: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.tune,
+                                        color: appState.advancedFiltersActive
+                                            ? Colors.white
+                                            : AppTheme.textSecondaryColor,
+                                      ),
+                                      if (_hasActiveFilters(appState))
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  tooltip: 'Advanced Filters',
+                                  onPressed: () {
+                                    appState.toggleAdvancedFilters();
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
+
+                    // Advanced Filters Panel
+                    SliverToBoxAdapter(
+                      child: RecipeFilterPanel(),
                     ),
 
                     // Categories
@@ -432,5 +496,14 @@ class _RecipesScreenState extends State<RecipesScreen>
       default:
         return Icons.restaurant;
     }
+  }
+
+  // Helper to check if any advanced filters are active
+  bool _hasActiveFilters(AppState appState) {
+    return appState.caloriesFilterActive ||
+        appState.prepTimeFilterActive ||
+        appState.proteinFilterActive ||
+        appState.carbsFilterActive ||
+        appState.fatFilterActive;
   }
 }
