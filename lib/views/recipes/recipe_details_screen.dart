@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_theme.dart';
 import '../../models/recipe.dart';
 import '../../providers/app_state.dart';
+import '../../services/storage_service.dart';
 
 class RecipeDetailsScreen extends StatefulWidget {
   const RecipeDetailsScreen({
@@ -333,7 +334,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Add to meal plan
+          _showAddToMealPlanDialog(context, widget.recipe);
         },
         backgroundColor: AppTheme.primaryColor,
         label: const Text('Add to Meal Plan'),
@@ -541,6 +542,287 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
       case MealType.snack:
         return Icons.cookie;
       case MealType.any:
+        return Icons.restaurant;
+    }
+  }
+
+  void _showAddToMealPlanDialog(BuildContext context, Recipe recipe) {
+    // List of meal types to choose from
+    final mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+    bool _isAdding = false;
+
+    // Default selected meal type based on recipe's meal type
+    String selectedMealType = 'Lunch';
+    if (recipe.mealType == MealType.breakfast) {
+      selectedMealType = 'Breakfast';
+    } else if (recipe.mealType == MealType.dinner) {
+      selectedMealType = 'Dinner';
+    } else if (recipe.mealType == MealType.snack) {
+      selectedMealType = 'Snacks';
+    }
+
+    // Show the dialog to select meal type
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.5,
+            decoration: const BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.borderRadiusLarge),
+                topRight: Radius.circular(AppTheme.borderRadiusLarge),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: AppTheme.spacing8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing16,
+                    vertical: AppTheme.spacing16,
+                  ),
+                  child: Text(
+                    'Add to Meal Plan',
+                    style: AppTheme.headlineMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                // Subtitle
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing16,
+                  ),
+                  child: Text(
+                    'Choose a meal type for "${recipe.name}"',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: AppTheme.spacing24),
+
+                // Meal type chips
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: mealTypes.map((type) {
+                      final isSelected = selectedMealType == type;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedMealType = type;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppTheme.spacing12,
+                            horizontal: AppTheme.spacing16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.borderRadiusMedium,
+                            ),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppTheme.primaryColor
+                                  : AppTheme.borderColor,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                _getMealTypeIconForType(type),
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.textSecondaryColor,
+                              ),
+                              const SizedBox(height: AppTheme.spacing8),
+                              Text(
+                                type,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : AppTheme.textPrimaryColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Add to meal plan button
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppTheme.spacing16,
+                    AppTheme.spacing16,
+                    AppTheme.spacing16,
+                    AppTheme.spacing16 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: FilledButton(
+                    onPressed: _isAdding
+                        ? null
+                        : () async {
+                            setState(() {
+                              _isAdding = true;
+                            });
+
+                            try {
+                              // Get the current date
+                              final now = DateTime.now();
+                              final today =
+                                  DateTime(now.year, now.month, now.day);
+
+                              // Get the storage service
+                              final storageService = StorageService();
+
+                              // DON'T try to update app state directly as it causes the error
+                              // Just use the storage service directly
+
+                              // Load existing meal plan for today
+                              final mealPlanData =
+                                  await storageService.loadDailyMealPlan(today);
+
+                              // Initialize with empty map if no data found
+                              final mealsByType = mealPlanData ??
+                                  <String, Map<String, dynamic>>{};
+
+                              // Add this recipe to the selected meal type
+                              mealsByType[selectedMealType] = {
+                                'recipeId': recipe.id,
+                                'name': recipe.name,
+                                'calories': recipe.calories,
+                                'imageUrl': recipe.imageUrl,
+                                'timestamp':
+                                    DateTime.now().millisecondsSinceEpoch,
+                              };
+
+                              // Save the updated meal plan
+                              await storageService.saveDailyMealPlan(
+                                  today, mealsByType);
+
+                              if (mounted) {
+                                // Close the dialog
+                                Navigator.pop(context);
+
+                                // Store the successfully added recipe and meal type for navigation
+                                final addedRecipe = recipe;
+                                final addedMealType = selectedMealType;
+
+                                // Show a success message without VIEW button
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${addedRecipe.name} added to ${addedMealType.toLowerCase()}',
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (error) {
+                              print(
+                                  '[_showAddToMealPlanDialog] Error adding to meal plan: $error');
+
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Failed to add recipe to meal plan'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                // Close the dialog even if there was an error
+                                Navigator.pop(context);
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _isAdding = false;
+                                });
+                              }
+                            }
+                          },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.borderRadiusMedium),
+                      ),
+                      // Add disabled style for when button is in loading state
+                      disabledBackgroundColor:
+                          AppTheme.primaryColor.withOpacity(0.6),
+                    ),
+                    child: _isAdding
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Add to Today\'s Meal Plan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Helper to get appropriate icon for each meal type string
+  IconData _getMealTypeIconForType(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return Icons.wb_sunny;
+      case 'lunch':
+        return Icons.wb_cloudy;
+      case 'dinner':
+        return Icons.nights_stay;
+      case 'snacks':
+        return Icons.cookie;
+      default:
         return Icons.restaurant;
     }
   }

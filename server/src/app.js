@@ -3,9 +3,9 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const recipeRoutes = require("./routes/recipe.routes");
-const userRoutes = require("./src/routes/userRoutes");
-const goalRoutes = require("./src/routes/goalRoutes");
-const userMealPlanRoutes = require("./src/routes/userMealPlanRoutes");
+const userRoutes = require("./routes/userRoutes");
+const goalRoutes = require("./routes/goalRoutes");
+const userMealPlanRoutes = require("./routes/userMealPlanRoutes");
 
 dotenv.config();
 const app = express();

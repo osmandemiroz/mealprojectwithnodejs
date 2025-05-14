@@ -10,14 +10,33 @@ import '../settings/profile_screen.dart';
 import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTab;
+
+  const HomeScreen({this.initialTab = 0, super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+  final PageStorageBucket _bucket = PageStorageBucket();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialTab;
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab) {
+      setState(() {
+        _selectedIndex = widget.initialTab;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,14 +90,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Main Content
           Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: const [
-                MealPlanScreen(),
-                RecipesScreen(),
-                GoalScreen(),
-                SettingsScreen(),
-              ],
+            child: PageStorage(
+              bucket: _bucket,
+              child: _selectedIndex == 0
+                  ? const MealPlanScreen(key: PageStorageKey('mealPlan'))
+                  : IndexedStack(
+                      index: _selectedIndex > 0 ? _selectedIndex - 1 : 0,
+                      children: const [
+                        RecipesScreen(key: PageStorageKey('recipes')),
+                        GoalScreen(key: PageStorageKey('goals')),
+                        SettingsScreen(key: PageStorageKey('settings')),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -94,7 +117,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
+          onTap: (index) {
+            // When clicking the meal plan tab, force the screen to fully reload
+            if (index == 0) {
+              setState(() => _selectedIndex = index);
+            } else {
+              // For other tabs, just switch the index
+              setState(() => _selectedIndex = index);
+            }
+          },
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppTheme.surfaceColor,
           selectedItemColor: AppTheme.primaryColor,

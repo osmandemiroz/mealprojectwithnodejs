@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_theme.dart';
 import '../../models/recipe.dart';
 import '../../providers/app_state.dart';
+import '../../services/storage_service.dart';
 import '../../widgets/error_message.dart';
 import '../../widgets/loading_indicator.dart';
 
@@ -16,9 +17,14 @@ class MealPlanScreen extends StatefulWidget {
   State<MealPlanScreen> createState() => _MealPlanScreenState();
 }
 
-class _MealPlanScreenState extends State<MealPlanScreen> {
+class _MealPlanScreenState extends State<MealPlanScreen>
+    with AutomaticKeepAliveClientMixin {
   late DateTime _selectedDate;
   late PageController _pageController;
+  final StorageService _storageService = StorageService();
+  bool _isLoading = false;
+  String? _errorMessage;
+  bool _didInitialLoad = false;
 
   // Store selected meals for each meal type
   final Map<String, Recipe?> _selectedMeals = {
@@ -35,17 +41,156 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
   double _totalFat = 0;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
     _pageController = PageController();
-    Future.microtask(() {
-      context.read<AppState>().loadMealPlans();
-      context.read<AppState>().loadRecipes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load data the first time the widget is inserted into the tree
+    // or when dependencies change (e.g., after navigation)
+    if (!_didInitialLoad) {
+      _didInitialLoad = true;
+      _loadData(showLoading: true);
+    }
+  }
+
+  // Force reload data when this screen becomes visible again
+  void reloadData() {
+    if (mounted) {
+      _loadData();
+    }
+  }
+
+  /// Load all required data including recipes and meal plans
+  Future<void> _loadData({bool showLoading = false}) async {
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      // First load recipes which are needed for meal plans
+      final appState = context.read<AppState>();
+
+      // Always reload meal data when this method is called
+      try {
+        await _loadMealsForSelectedDate();
+      } catch (e) {
+        print('[MealPlanScreen] Error loading meals: $e');
+      }
+
+      // Check if we need to load recipes (if they're empty)
+      if (appState.recipes.isEmpty) {
+        try {
+          await appState.loadRecipes();
+          // After loading recipes, reload meal data again in case it depends on recipes
+          await _loadMealsForSelectedDate();
+        } catch (e) {
+          print('[MealPlanScreen] Error loading recipes: $e');
+          // Continue anyway with what we have
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('[MealPlanScreen] Error loading data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not load meal plan data. Please try again.';
+        });
+      }
+    }
+  }
+
+  /// Load meals for the selected date from storage
+  Future<void> _loadMealsForSelectedDate() async {
+    try {
+      final mealPlanData =
+          await _storageService.loadDailyMealPlan(_selectedDate);
+      final recipes = context.read<AppState>().recipes;
+
+      // Reset meal selections
+      final updatedMeals = <String, Recipe?>{
+        'Breakfast': null,
+        'Lunch': null,
+        'Dinner': null,
+        'Snacks': null,
+      };
+
+      if (mealPlanData != null && recipes.isNotEmpty) {
+        // Reconstruct Recipe objects from stored data
+        mealPlanData.forEach((mealType, mealData) {
+          final recipeId = mealData['recipeId']?.toString();
+          if (recipeId != null) {
+            // Find the recipe in the app state
+            final matchingRecipes =
+                recipes.where((r) => r.id == recipeId).toList();
+            if (matchingRecipes.isNotEmpty) {
+              updatedMeals[mealType] = matchingRecipes.first;
+            } else {
+              // If recipe not found in app state, create a temporary one from stored data
+              updatedMeals[mealType] = Recipe(
+                id: recipeId,
+                name: mealData['name']?.toString() ?? 'Unknown Recipe',
+                description: '',
+                imageUrl: mealData['imageUrl']?.toString() ?? '',
+                preparationTime: 0,
+                cookingTime: 0,
+                servings: 0,
+                ingredients: [],
+                instructions: [],
+                categories: [],
+                calories:
+                    int.tryParse(mealData['calories']?.toString() ?? '0') ?? 0,
+                nutrients: {},
+              );
+            }
+          }
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _selectedMeals.clear();
+          _selectedMeals.addAll(updatedMeals);
+          _calculateDailyNutritionTotals();
+        });
+      }
+    } catch (e) {
+      print('[MealPlanScreen] Error loading meals for date: $e');
+      // Don't show error to user, just log it
+    }
+  }
+
+  /// Save current meal selections for the selected date
+  Future<void> _saveMealsForSelectedDate() async {
+    final mealPlanData = <String, Map<String, dynamic>>{};
+
+    _selectedMeals.forEach((mealType, recipe) {
+      if (recipe != null) {
+        mealPlanData[mealType] = {
+          'recipeId': recipe.id,
+          'name': recipe.name,
+          'calories': recipe.calories,
+        };
+      }
     });
 
-    // TODO: Load saved meal selections for today from backend
-    _calculateDailyNutritionTotals();
+    await _storageService.saveDailyMealPlan(_selectedDate, mealPlanData);
   }
 
   void _calculateDailyNutritionTotals() {
@@ -74,79 +219,118 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required by AutomaticKeepAliveClientMixin
+
+    // Always try to reload when visible - this ensures data is fresh after navigation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && Navigator.of(context).canPop()) {
+        // Only reload if we're coming back from another screen (e.g. recipe details)
+        reloadData();
+      }
+    });
+
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        if (appState.isLoading) {
+        if (_isLoading) {
           return const LoadingIndicator(
             message: 'Loading meal plans...',
           );
         }
 
-        if (appState.error != null) {
+        if (_errorMessage != null) {
           return ErrorMessage(
-            message: appState.error!,
+            message: _errorMessage!,
             onRetry: () {
-              appState.loadMealPlans();
-              appState.loadRecipes();
+              _loadData(showLoading: true);
             },
           );
         }
 
-        return CustomScrollView(
-          slivers: [
-            // Calendar Strip
-            SliverToBoxAdapter(
-              child: Container(
-                height: 100,
-                margin:
-                    const EdgeInsets.symmetric(vertical: AppTheme.spacing16),
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemBuilder: (context, weekIndex) {
-                    final weekStart = DateTime.now().add(
-                      Duration(
-                        days: weekIndex * 7 - DateTime.now().weekday + 1,
-                      ),
-                    );
-                    return _buildWeekCalendar(weekStart);
-                  },
+        return RefreshIndicator(
+          onRefresh: () async {
+            await _loadData();
+          },
+          child: CustomScrollView(
+            slivers: [
+              // Calendar Strip
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 100,
+                  margin:
+                      const EdgeInsets.symmetric(vertical: AppTheme.spacing16),
+                  child: FutureBuilder<List<DateTime>>(
+                      future: _storageService.getSavedMealPlanDates(),
+                      builder: (context, snapshot) {
+                        final savedDates = snapshot.data ?? [];
+
+                        return PageView.builder(
+                          controller: _pageController,
+                          itemBuilder: (context, weekIndex) {
+                            final weekStart = DateTime.now().add(
+                              Duration(
+                                days:
+                                    weekIndex * 7 - DateTime.now().weekday + 1,
+                              ),
+                            );
+                            return _buildWeekCalendar(weekStart, savedDates);
+                          },
+                        );
+                      }),
                 ),
               ),
-            ),
 
-            // Daily Nutrition Summary
-            SliverToBoxAdapter(
-              child: _buildDailyNutritionSummary(),
-            ),
+              // Daily Nutrition Summary
+              SliverToBoxAdapter(
+                child: _buildDailyNutritionSummary(),
+              ),
 
-            // Today's Meals
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacing16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEEE, MMMM d').format(_selectedDate),
-                      style: AppTheme.displaySmall,
-                    ).animate().fadeIn().slideX(),
-                    const SizedBox(height: AppTheme.spacing16),
-                    Text(
-                      "Today's Meals",
-                      style: AppTheme.headlineMedium.copyWith(
-                        fontWeight: FontWeight.bold,
+              // Today's Meals
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacing16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('EEEE, MMMM d').format(_selectedDate),
+                        style: AppTheme.displaySmall,
+                      ).animate().fadeIn().slideX(),
+                      const SizedBox(height: AppTheme.spacing16),
+                      Text(
+                        DateUtils.isSameDay(_selectedDate, DateTime.now())
+                            ? "Today's Meals"
+                            : "Meals for ${DateFormat('MMMM d').format(_selectedDate)}",
+                        style: AppTheme.headlineMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacing16),
+                      _buildMealSection('Breakfast', Icons.wb_sunny, appState),
+                      _buildMealSection('Lunch', Icons.wb_cloudy, appState),
+                      _buildMealSection('Dinner', Icons.nights_stay, appState),
+                      _buildMealSection('Snacks', Icons.cookie, appState),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Instructions to pull-to-refresh
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppTheme.spacing24),
+                    child: Text(
+                      'Pull down to refresh meal plan',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.textSecondaryColor,
                       ),
                     ),
-                    const SizedBox(height: AppTheme.spacing16),
-                    _buildMealSection('Breakfast', Icons.wb_sunny, appState),
-                    _buildMealSection('Lunch', Icons.wb_cloudy, appState),
-                    _buildMealSection('Dinner', Icons.nights_stay, appState),
-                    _buildMealSection('Snacks', Icons.cookie, appState),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -278,7 +462,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
     );
   }
 
-  Widget _buildWeekCalendar(DateTime weekStart) {
+  Widget _buildWeekCalendar(DateTime weekStart, List<DateTime> savedDates) {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16),
@@ -287,9 +471,15 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
         final date = weekStart.add(Duration(days: index));
         final isSelected = DateUtils.isSameDay(date, _selectedDate);
         final isToday = DateUtils.isSameDay(date, DateTime.now());
+        final hasSavedMealPlan =
+            savedDates.any((savedDate) => DateUtils.isSameDay(savedDate, date));
 
         return GestureDetector(
-          onTap: () => setState(() => _selectedDate = date),
+          onTap: () {
+            setState(() => _selectedDate = date);
+            // Load meals for the newly selected date
+            _loadMealsForSelectedDate();
+          },
           child: Container(
             width: 54,
             margin: const EdgeInsets.only(right: AppTheme.spacing8),
@@ -317,6 +507,18 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                         isSelected ? Colors.white : AppTheme.textPrimaryColor,
                   ),
                 ),
+                if (hasSavedMealPlan)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.primaryColor.withOpacity(0.8),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -406,20 +608,22 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       setState(() {
                         _selectedMeals[title] = null;
                         _calculateDailyNutritionTotals();
+                        // Save the updated meal plan
+                        _saveMealsForSelectedDate();
                       });
                     },
                   )
                 else
                   const Icon(
-                    Icons.chevron_right,
-                    color: AppTheme.textSecondaryColor,
+                    Icons.add_circle_outline,
+                    color: AppTheme.primaryColor,
                   ),
               ],
             ),
           ),
         ),
       ),
-    ).animate().fadeIn().slideX();
+    ).animate().fadeIn().slideY();
   }
 
   void _showMealSelectionDialog(String mealType, AppState appState) {
@@ -626,6 +830,8 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                               this.setState(() {
                                 _selectedMeals[mealType] = recipe;
                                 _calculateDailyNutritionTotals();
+                                // Save the updated meal plan
+                                _saveMealsForSelectedDate();
                               });
                               Navigator.pop(context);
                             },

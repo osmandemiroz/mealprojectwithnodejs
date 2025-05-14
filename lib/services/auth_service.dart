@@ -24,6 +24,37 @@ class AuthService with ChangeNotifier {
       ? 'http://10.0.2.2:3000/api' // For Android emulator
       : 'http://localhost:3000/api'; // For iOS simulator or web
 
+  /// Get the current user's ID or a default value if not authenticated
+  Future<String> getCurrentUserId() async {
+    // First check if we have a current user with ID
+    if (_currentUser != null) {
+      final String? userId = _currentUser!.id;
+      if (userId != null && userId.isNotEmpty) {
+        return userId;
+      }
+    }
+
+    // Try to load from shared preferences as fallback
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? userJson = prefs.getString('user');
+
+      if (userJson != null) {
+        final Map<String, dynamic> userData =
+            jsonDecode(userJson) as Map<String, dynamic>;
+        final String? id = userData['id'] as String?;
+        if (id != null && id.isNotEmpty) {
+          return id;
+        }
+      }
+    } catch (e) {
+      debugPrint('[AuthService.getCurrentUserId] Error loading user: $e');
+    }
+
+    // Return default ID if nothing else is available
+    return '1'; // Default ID for development/testing
+  }
+
   /// Initialize AuthService by checking for stored user data
   Future<void> init() async {
     _setLoading(true);

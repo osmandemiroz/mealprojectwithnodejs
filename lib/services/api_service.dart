@@ -10,11 +10,15 @@ import '../models/grocery_list.dart';
 import '../models/meal_plan.dart';
 import '../models/progress.dart';
 import '../models/recipe.dart';
+import '../services/auth_service.dart';
 
 class ApiService {
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({http.Client? client, AuthService? authService})
+      : _client = client ?? http.Client(),
+        _authService = authService ?? AuthService();
   static const String baseUrl = 'http://localhost:3000/api';
   final http.Client _client;
+  final AuthService _authService;
 
   // Recipe endpoints
   Future<List<Recipe>> getRecipes() async {
@@ -285,7 +289,7 @@ class ApiService {
   // Goal endpoints
   Future<List<Goal>> getGoals() async {
     // Get current user ID from auth service
-    const String userId = '1'; // Replace with actual user ID from auth
+    final String userId = await _authService.getCurrentUserId();
 
     final response =
         await _client.get(Uri.parse('$baseUrl/users/$userId/goals'));
@@ -315,9 +319,14 @@ class ApiService {
       body: json.encode(goal.toJson()),
     );
     if (response.statusCode == 201) {
-      return Goal.fromJson(
-        json.decode(response.body) as Map<String, dynamic>,
-      );
+      final responseBody = json.decode(response.body);
+      // If the response doesn't contain the full goal object but just the ID and success message
+      if (responseBody is Map<String, dynamic> &&
+          responseBody.containsKey('goalId')) {
+        // Get the full goal using the returned ID
+        return getGoal(responseBody['goalId'].toString());
+      }
+      return Goal.fromJson(responseBody as Map<String, dynamic>);
     }
     throw Exception('Failed to create goal');
   }
@@ -329,6 +338,10 @@ class ApiService {
       body: json.encode(goal.toJson()),
     );
     if (response.statusCode == 200) {
+      // If the response is just a success message, get the updated goal
+      if (response.body.contains('Goal updated successfully')) {
+        return getGoal(goal.id);
+      }
       return Goal.fromJson(
         json.decode(response.body) as Map<String, dynamic>,
       );
@@ -336,10 +349,49 @@ class ApiService {
     throw Exception('Failed to update goal');
   }
 
+  Future<bool> deleteGoal(String goalId) async {
+    final response = await _client.delete(
+      Uri.parse('$baseUrl/goals/$goalId'),
+    );
+    if (response.statusCode == 200) {
+      return true;
+    }
+    throw Exception('Failed to delete goal');
+  }
+
+  Future<List<Goal>> getActiveGoals() async {
+    final String userId = await _authService.getCurrentUserId();
+
+    final response = await _client.get(
+      Uri.parse('$baseUrl/users/$userId/goals/active'),
+    );
+    if (response.statusCode == 200) {
+      final jsonList = json.decode(response.body) as List<dynamic>;
+      return jsonList
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Failed to load active goals');
+  }
+
+  Future<List<Goal>> getCompletedGoals() async {
+    final String userId = await _authService.getCurrentUserId();
+
+    final response = await _client.get(
+      Uri.parse('$baseUrl/users/$userId/goals/completed'),
+    );
+    if (response.statusCode == 200) {
+      final jsonList = json.decode(response.body) as List<dynamic>;
+      return jsonList
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Failed to load completed goals');
+  }
+
   // Progress endpoints
   Future<List<Progress>> getProgressEntries() async {
-    // Get current user ID from auth service
-    const String userId = '1'; // Replace with actual user ID from auth
+    final String userId = await _authService.getCurrentUserId();
 
     final response =
         await _client.get(Uri.parse('$baseUrl/users/$userId/progress'));

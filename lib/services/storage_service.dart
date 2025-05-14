@@ -21,6 +21,7 @@ class StorageService {
   static const String _recipeMealTypesKey = 'recipe_meal_types';
   static const String _activeGoalKey = 'active_goal';
   static const String _userGoalsKey = 'user_goals';
+  static const String _dailyMealPlansKey = 'daily_meal_plans';
 
   /// Initialize the storage service
   Future<void> init() async {
@@ -70,6 +71,110 @@ class StorageService {
     return result;
   }
 
+  /// Save daily meal plan for a specific date to local storage
+  Future<void> saveDailyMealPlan(
+      DateTime date, Map<String, Map<String, dynamic>> mealsByType) async {
+    final prefs = await SharedPreferences.getInstance();
+    final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
+    final Map<String, dynamic> allMealPlans =
+        json.decode(mealsJson) as Map<String, dynamic>;
+
+    // Convert DateTime to string in format yyyy-MM-dd for storage
+    final dateStr = _formatDateForStorage(date);
+
+    // Update the map with the meal plan for this date
+    allMealPlans[dateStr] = mealsByType;
+
+    // Save the updated map back to shared preferences
+    await prefs.setString(_dailyMealPlansKey, json.encode(allMealPlans));
+
+    print('[saveDailyMealPlan] Saved meal plan for $dateStr');
+  }
+
+  /// Load daily meal plan for a specific date from local storage
+  Future<Map<String, Map<String, dynamic>>?> loadDailyMealPlan(
+      DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
+    final Map<String, dynamic> allMealPlans =
+        json.decode(mealsJson) as Map<String, dynamic>;
+
+    // Convert DateTime to string in format yyyy-MM-dd for retrieval
+    final dateStr = _formatDateForStorage(date);
+
+    if (allMealPlans.containsKey(dateStr)) {
+      print('[loadDailyMealPlan] Loaded meal plan for $dateStr');
+      try {
+        final mealData = allMealPlans[dateStr] as Map<String, dynamic>;
+        final result = <String, Map<String, dynamic>>{};
+
+        mealData.forEach((mealType, mealInfo) {
+          result[mealType] = mealInfo as Map<String, dynamic>;
+        });
+
+        return result;
+      } catch (e) {
+        print('[loadDailyMealPlan] Error parsing meal plan: $e');
+        return null;
+      }
+    }
+
+    print('[loadDailyMealPlan] No meal plan found for $dateStr');
+    return null;
+  }
+
+  /// Delete daily meal plan for a specific date from local storage
+  Future<void> deleteDailyMealPlan(DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
+    final Map<String, dynamic> allMealPlans =
+        json.decode(mealsJson) as Map<String, dynamic>;
+
+    // Convert DateTime to string in format yyyy-MM-dd for retrieval
+    final dateStr = _formatDateForStorage(date);
+
+    if (allMealPlans.containsKey(dateStr)) {
+      allMealPlans.remove(dateStr);
+      // Save the updated map back to shared preferences
+      await prefs.setString(_dailyMealPlansKey, json.encode(allMealPlans));
+      print('[deleteDailyMealPlan] Deleted meal plan for $dateStr');
+    }
+  }
+
+  /// Get all saved meal plan dates
+  Future<List<DateTime>> getSavedMealPlanDates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
+    final Map<String, dynamic> allMealPlans =
+        json.decode(mealsJson) as Map<String, dynamic>;
+
+    return allMealPlans.keys
+        .map((dateStr) => _parseDateFromStorage(dateStr))
+        .where((date) => date != null)
+        .cast<DateTime>()
+        .toList();
+  }
+
+  /// Convert DateTime to string format for storage
+  String _formatDateForStorage(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Parse date string from storage format
+  DateTime? _parseDateFromStorage(String dateStr) {
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return DateTime(
+            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      }
+      return null;
+    } catch (e) {
+      print('[_parseDateFromStorage] Error parsing date: $e');
+      return null;
+    }
+  }
+
   /// Save the active goal to local storage
   Future<void> saveActiveGoal(Goal goal) async {
     final prefs = await SharedPreferences.getInstance();
@@ -94,6 +199,12 @@ class StorageService {
       print('[loadActiveGoal] Error parsing goal: $e'); // Add function name
       return null;
     }
+  }
+
+  /// Clear the active goal from local storage
+  Future<void> clearActiveGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_activeGoalKey);
   }
 
   /// Save all user goals to local storage

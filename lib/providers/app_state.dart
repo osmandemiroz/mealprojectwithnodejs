@@ -617,9 +617,73 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> loadActiveGoals() async {
+    _setLoading(true);
+    try {
+      try {
+        // Try to load active goals from API first
+        final activeGoals = await _apiService.getActiveGoals();
+        // Update the in-memory goals list with active goals
+        _goals = _mergeGoals(_goals, activeGoals);
+      } catch (e) {
+        print('[loadActiveGoals] API error: $e');
+        // In case of error, we continue with the goals we already have
+      }
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to load active goals: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> loadCompletedGoals() async {
+    _setLoading(true);
+    try {
+      try {
+        // Try to load completed goals from API first
+        final completedGoals = await _apiService.getCompletedGoals();
+        // Update the in-memory goals list with completed goals
+        _goals = _mergeGoals(_goals, completedGoals);
+      } catch (e) {
+        print('[loadCompletedGoals] API error: $e');
+        // In case of error, we continue with the goals we already have
+      }
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to load completed goals: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Merge new goals with existing goals, avoiding duplicates
+  List<Goal> _mergeGoals(List<Goal> existingGoals, List<Goal> newGoals) {
+    final Map<String, Goal> goalMap = {
+      for (final goal in existingGoals) goal.id: goal
+    };
+
+    // Add or update with new goals
+    for (final newGoal in newGoals) {
+      goalMap[newGoal.id] = newGoal;
+    }
+
+    return goalMap.values.toList();
+  }
+
   Future<void> addGoal(Goal goal) async {
     _setLoading(true);
     try {
+      // Check if there's already an active goal
+      final hasActiveGoal = _goals.any((g) =>
+          g.endDate.isAfter(DateTime.now()) &&
+          g.startDate.isBefore(DateTime.now()));
+
+      if (hasActiveGoal) {
+        _error = 'You can only have one active goal at a time';
+        return;
+      }
+
       Goal newGoal;
 
       try {
@@ -658,12 +722,8 @@ class AppState extends ChangeNotifier {
       // Save to local storage
       await _saveGoalsToLocalStorage();
 
-      // If this is the first goal or it's an active goal, set it as active
-      if (_goals.length == 1 ||
-          (newGoal.endDate.isAfter(DateTime.now()) &&
-              newGoal.startDate.isBefore(DateTime.now()))) {
-        await _storageService.saveActiveGoal(newGoal);
-      }
+      // Set this goal as active
+      await _storageService.saveActiveGoal(newGoal);
 
       _error = null;
     } catch (e) {
@@ -705,6 +765,37 @@ class AppState extends ChangeNotifier {
       _error = null;
     } catch (e) {
       _error = 'Failed to update goal: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> deleteGoal(String goalId) async {
+    _setLoading(true);
+    try {
+      try {
+        // Try to delete goal via API first
+        await _apiService.deleteGoal(goalId);
+      } catch (e) {
+        // If API fails, just continue with local delete
+        print('[deleteGoal] API error, using local storage only: $e');
+      }
+
+      // Update in-memory list of goals
+      _goals = _goals.where((g) => g.id != goalId).toList();
+
+      // Save to local storage
+      await _saveGoalsToLocalStorage();
+
+      // If this was the active goal, clear it
+      final activeGoal = await _storageService.loadActiveGoal();
+      if (activeGoal != null && activeGoal.id == goalId) {
+        await _storageService.clearActiveGoal();
+      }
+
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to delete goal: $e';
     } finally {
       _setLoading(false);
     }

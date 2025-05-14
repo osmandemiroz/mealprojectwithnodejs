@@ -21,9 +21,13 @@ class _GoalScreenState extends State<GoalScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      context.read<AppState>().loadGoals();
-      context.read<AppState>().loadProgressEntries();
+    // Load goals on screen init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = context.read<AppState>();
+      appState.loadGoals();
+      appState.loadActiveGoals();
+      appState.loadCompletedGoals();
+      appState.loadProgressEntries();
     });
   }
 
@@ -42,11 +46,14 @@ class _GoalScreenState extends State<GoalScreen> {
             message: appState.error!,
             onRetry: () {
               appState.loadGoals();
+              appState.loadActiveGoals();
+              appState.loadCompletedGoals();
               appState.loadProgressEntries();
             },
           );
         }
 
+        // Show empty state only when there are no goals
         if (appState.goals.isEmpty) {
           return Center(
             child: Column(
@@ -85,13 +92,16 @@ class _GoalScreenState extends State<GoalScreen> {
 
         return CustomScrollView(
           slivers: [
-            // Current Weekly Stats Section
-            SliverToBoxAdapter(
-              child: _WeeklyStatsSummary(
-                goals: appState.goals,
-                progressEntries: appState.progressEntries,
-              ).animate().fadeIn().slideY(),
-            ),
+            // Only show Weekly Stats Summary if there's an active goal
+            if (appState.goals.any((goal) =>
+                goal.endDate.isAfter(DateTime.now()) &&
+                goal.startDate.isBefore(DateTime.now())))
+              SliverToBoxAdapter(
+                child: _WeeklyStatsSummary(
+                  goals: appState.goals,
+                  progressEntries: appState.progressEntries,
+                ).animate().fadeIn().slideY(),
+              ),
 
             // Active Goals Section
             SliverToBoxAdapter(
@@ -112,11 +122,13 @@ class _GoalScreenState extends State<GoalScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: () => _showAddGoalDialog(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add'),
-                    ),
+                    // Only show the Add button if there are no goals
+                    if (appState.goals.isEmpty)
+                      TextButton.icon(
+                        onPressed: () => _showAddGoalDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add'),
+                      ),
                   ],
                 ),
               ),
@@ -150,24 +162,46 @@ class _GoalScreenState extends State<GoalScreen> {
   }
 
   void _showAddGoalDialog(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
+    // Check if there's already a goal
+    final appState = context.read<AppState>();
+    final hasActiveGoal = appState.goals.any((goal) =>
+        goal.endDate.isAfter(DateTime.now()) &&
+        goal.startDate.isBefore(DateTime.now()));
+
+    if (hasActiveGoal) {
+      // Show a message that only one active goal is allowed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You can only have one active goal at a time'),
+        ),
+      );
+      return;
+    }
+
+    _showCreateGoalModal(context);
+  }
+
+  void _showCreateGoalModal(BuildContext context) {
+    // Initialize variables for the modal
+    String goalType = 'Weight Loss';
+    DateTime? startDate;
+    DateTime? endDate;
+    String activityStatusPerDay = 'Moderate';
+    int numberOfMealsPerDay = 3;
+    int targetCalories = 2000;
+    int targetProtein = 120;
+    int targetCarbs = 200;
+    int targetFat = 65;
+
+    // Text controllers
     final TextEditingController startDateController = TextEditingController();
     final TextEditingController endDateController = TextEditingController();
     final TextEditingController startWeightController = TextEditingController();
     final TextEditingController desiredWeightController =
         TextEditingController();
 
-    DateTime? startDate;
-    DateTime? endDate;
-    String goalType = 'Weight Loss';
-    int numberOfMealsPerDay = 3;
-    String activityStatusPerDay = 'Moderate';
-
-    // Target nutrient values
-    int targetCalories = 2000;
-    int targetProtein = 150;
-    int targetCarbs = 200;
-    int targetFat = 70;
+    // Form key
+    final formKey = GlobalKey<FormState>();
 
     // Define activity status options
     final List<String> activityOptions = [
@@ -186,58 +220,62 @@ class _GoalScreenState extends State<GoalScreen> {
       'Maintenance'
     ];
 
-    // Show date picker
-    Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-      final initialDate = isStartDate
-          ? DateTime.now()
-          : (startDate?.add(const Duration(days: 30)) ??
-              DateTime.now().add(const Duration(days: 30)));
-      final firstDate = isStartDate
-          ? DateTime.now().subtract(const Duration(days: 1))
-          : (startDate ?? DateTime.now());
-      final lastDate = isStartDate
-          ? DateTime.now().add(const Duration(days: 365))
-          : DateTime.now().add(const Duration(days: 730));
-
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: initialDate,
-        firstDate: firstDate,
-        lastDate: lastDate,
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
-                primary: AppTheme.primaryColor,
-                onPrimary: Colors.white,
-                surface: Colors.white,
-                onSurface: AppTheme.textPrimaryColor,
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
-
-      if (pickedDate != null) {
-        if (isStartDate) {
-          startDate = pickedDate;
-          startDateController.text =
-              DateFormat('MMM d, yyyy').format(pickedDate);
-        } else {
-          endDate = pickedDate;
-          endDateController.text = DateFormat('MMM d, yyyy').format(pickedDate);
-        }
-      }
-    }
-
     // Show full-screen bottom sheet for better UX
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          // Custom select date function that uses the modal's setState
+          Future<void> _selectDate(
+              BuildContext context, bool isStartDate) async {
+            final initialDate = isStartDate
+                ? DateTime.now()
+                : (startDate?.add(const Duration(days: 30)) ??
+                    DateTime.now().add(const Duration(days: 30)));
+            final firstDate = isStartDate
+                ? DateTime.now().subtract(const Duration(days: 1))
+                : (startDate ?? DateTime.now());
+            final lastDate = isStartDate
+                ? DateTime.now().add(const Duration(days: 365))
+                : DateTime.now().add(const Duration(days: 730));
+
+            final pickedDate = await showDatePicker(
+              context: context,
+              initialDate: initialDate,
+              firstDate: firstDate,
+              lastDate: lastDate,
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: ColorScheme.light(
+                      primary: AppTheme.primaryColor,
+                      onPrimary: Colors.white,
+                      surface: Colors.white,
+                      onSurface: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+
+            if (pickedDate != null) {
+              setModalState(() {
+                if (isStartDate) {
+                  startDate = pickedDate;
+                  startDateController.text =
+                      DateFormat('MMM d, yyyy').format(pickedDate);
+                } else {
+                  endDate = pickedDate;
+                  endDateController.text =
+                      DateFormat('MMM d, yyyy').format(pickedDate);
+                }
+              });
+            }
+          }
+
           return Container(
             height: MediaQuery.of(context).size.height * 0.9,
             decoration: const BoxDecoration(
@@ -323,7 +361,7 @@ class _GoalScreenState extends State<GoalScreen> {
                               }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
-                                  setState(() {
+                                  setModalState(() {
                                     goalType = value;
                                   });
                                 }
@@ -347,7 +385,9 @@ class _GoalScreenState extends State<GoalScreen> {
                               // Start Date
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => _selectDate(context, true),
+                                  onTap: () async {
+                                    await _selectDate(context, true);
+                                  },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),
@@ -397,7 +437,9 @@ class _GoalScreenState extends State<GoalScreen> {
                               // End Date
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () => _selectDate(context, false),
+                                  onTap: () async {
+                                    await _selectDate(context, false);
+                                  },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),
@@ -583,7 +625,7 @@ class _GoalScreenState extends State<GoalScreen> {
                               }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
-                                  setState(() {
+                                  setModalState(() {
                                     activityStatusPerDay = value;
                                   });
                                 }
@@ -627,7 +669,7 @@ class _GoalScreenState extends State<GoalScreen> {
                               }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
-                                  setState(() {
+                                  setModalState(() {
                                     numberOfMealsPerDay = value;
                                   });
                                 }
@@ -656,7 +698,7 @@ class _GoalScreenState extends State<GoalScreen> {
                             max: 3000.0,
                             unit: 'kcal',
                             onChanged: (value) {
-                              setState(() {
+                              setModalState(() {
                                 targetCalories = value.round();
                               });
                             },
@@ -673,7 +715,7 @@ class _GoalScreenState extends State<GoalScreen> {
                             max: 250.0,
                             unit: 'g',
                             onChanged: (value) {
-                              setState(() {
+                              setModalState(() {
                                 targetProtein = value.round();
                               });
                             },
@@ -690,7 +732,7 @@ class _GoalScreenState extends State<GoalScreen> {
                             max: 400.0,
                             unit: 'g',
                             onChanged: (value) {
-                              setState(() {
+                              setModalState(() {
                                 targetCarbs = value.round();
                               });
                             },
@@ -707,7 +749,7 @@ class _GoalScreenState extends State<GoalScreen> {
                             max: 150.0,
                             unit: 'g',
                             onChanged: (value) {
-                              setState(() {
+                              setModalState(() {
                                 targetFat = value.round();
                               });
                             },
@@ -847,17 +889,28 @@ class _WeeklyStatsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the active goal with the most recent progress entry
-    Goal? activeGoal;
+    // Find the active goal
+    final now = DateTime.now();
+    Goal? activeGoal = goals.isNotEmpty
+        ? goals.firstWhere(
+            (goal) => goal.endDate.isAfter(now) && goal.startDate.isBefore(now),
+            orElse: () => goals.first,
+          )
+        : null;
+
     Progress? latestProgress;
 
-    if (goals.isNotEmpty) {
-      activeGoal = goals.first;
+    if (activeGoal != null && progressEntries.isNotEmpty) {
+      // Find progress entries for this goal
+      final goalProgressEntries = progressEntries
+          .where((progress) => progress.goalId == activeGoal.id)
+          .toList();
 
-      if (progressEntries.isNotEmpty) {
-        progressEntries
+      if (goalProgressEntries.isNotEmpty) {
+        // Sort by date to get the most recent
+        goalProgressEntries
             .sort((a, b) => b.lastUpdatedDate.compareTo(a.lastUpdatedDate));
-        latestProgress = progressEntries.first;
+        latestProgress = goalProgressEntries.first;
       }
     }
 
@@ -1047,35 +1100,41 @@ class _NutritionStatItem extends StatelessWidget {
 }
 
 class _GoalCard extends StatelessWidget {
-  const _GoalCard({
-    required this.goal,
-    this.progress,
-  });
-
   final Goal goal;
   final Progress? progress;
 
+  const _GoalCard({
+    Key? key,
+    required this.goal,
+    this.progress,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    final daysLeft = goal.endDate.difference(DateTime.now()).inDays;
-    final isActive = goal.endDate.isAfter(DateTime.now());
-
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final startDateStr = dateFormat.format(goal.startDate);
-    final endDateStr = dateFormat.format(goal.endDate);
-
-    // Calculate progress percentage
-    final progressPercent = progress?.progressPercentage ?? 0.0;
+    final startDateStr = DateFormat('MMM d, yyyy').format(goal.startDate);
+    final endDateStr = DateFormat('MMM d, yyyy').format(goal.endDate);
+    final isActive = goal.endDate.isAfter(DateTime.now()) &&
+        goal.startDate.isBefore(DateTime.now());
 
     return Card(
+      margin: const EdgeInsets.symmetric(
+        vertical: AppTheme.spacing8,
+        horizontal: AppTheme.spacing16,
+      ),
       elevation: 0,
-      color: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+        side: BorderSide(
+          color: isActive
+              ? AppTheme.primaryColor.withOpacity(0.5)
+              : Colors.grey.withOpacity(0.2),
+          width: 1.5,
+        ),
       ),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to goal details
+          // Navigate to goal details
+          // TODO: Implement goal details screen
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
         child: Padding(
@@ -1106,25 +1165,72 @@ class _GoalCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacing8,
-                      vertical: AppTheme.spacing4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppTheme.primaryColor.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.borderRadiusSmall),
-                    ),
-                    child: Text(
-                      isActive ? '$daysLeft days left' : 'Completed',
-                      style: AppTheme.bodySmall.copyWith(
-                        color: isActive ? AppTheme.primaryColor : Colors.grey,
-                        fontWeight: FontWeight.w500,
+                  // Status indicator and action buttons
+                  Row(
+                    children: [
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacing8,
+                          vertical: AppTheme.spacing4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppTheme.primaryColor.withOpacity(0.1)
+                              : Colors.grey.withOpacity(0.1),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.borderRadiusSmall),
+                        ),
+                        child: Text(
+                          isActive ? 'Active' : 'Completed',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: isActive
+                                ? AppTheme.primaryColor
+                                : AppTheme.textSecondaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppTheme.spacing8),
+                      // Menu for more actions
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: AppTheme.textSecondaryColor,
+                          size: 20,
+                        ),
+                        onSelected: (value) {
+                          if (value == 'delete') {
+                            _confirmDeleteGoal(context, goal.id);
+                          } else if (value == 'edit') {
+                            _editGoal(context, goal);
+                          } else if (value == 'set_active') {
+                            context.read<AppState>().setActiveGoal(goal);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('${goal.goalType} set as active goal'),
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (!isActive)
+                            const PopupMenuItem<String>(
+                              value: 'set_active',
+                              child: Text('Set as active'),
+                            ),
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1172,7 +1278,7 @@ class _GoalCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${(progressPercent * 100).toStringAsFixed(0)}%',
+                        '${((progress?.progressPercentage ?? 0.0) * 100).toStringAsFixed(0)}%',
                         style: AppTheme.bodyMedium.copyWith(
                           color: AppTheme.textPrimaryColor,
                           fontWeight: FontWeight.w500,
@@ -1182,7 +1288,7 @@ class _GoalCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppTheme.spacing8),
                   LinearProgressIndicator(
-                    value: progressPercent,
+                    value: progress?.progressPercentage ?? 0.0,
                     backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       AppTheme.primaryColor,
@@ -1198,6 +1304,733 @@ class _GoalCard extends StatelessWidget {
       ),
     );
   }
+
+  // Show confirmation dialog before deleting a goal
+  void _confirmDeleteGoal(BuildContext context, String goalId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Goal'),
+        content: const Text(
+            'Are you sure you want to delete this goal? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AppState>().deleteGoal(goalId);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Goal deleted successfully'),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Open the edit goal dialog
+  void _editGoal(BuildContext context, Goal goal) {
+    _showEditGoalDialog(context, goal);
+  }
+}
+
+// Method to show the edit goal dialog with pre-filled data
+void _showEditGoalDialog(BuildContext context, Goal goal) {
+  final formKey = GlobalKey<FormState>();
+  final TextEditingController startDateController = TextEditingController(
+      text: DateFormat('MMM d, yyyy').format(goal.startDate));
+  final TextEditingController endDateController = TextEditingController(
+      text: DateFormat('MMM d, yyyy').format(goal.endDate));
+  final TextEditingController startWeightController = TextEditingController(
+      text: goal.startWeight != null && goal.startWeight! > 0
+          ? goal.startWeight.toString()
+          : '');
+  final TextEditingController desiredWeightController = TextEditingController(
+      text: goal.desiredWeight != null && goal.desiredWeight! > 0
+          ? goal.desiredWeight.toString()
+          : '');
+
+  // Initialize with goal values
+  DateTime startDate = goal.startDate;
+  DateTime endDate = goal.endDate;
+  String goalType = goal.goalType;
+  String activityStatusPerDay = goal.activityStatusPerDay ?? 'Moderate';
+  int numberOfMealsPerDay = goal.numberOfMealsPerDay ?? 3;
+  int targetCalories = goal.targetCalories;
+  int targetProtein = goal.targetProtein;
+  int targetCarbs = goal.targetCarbs;
+  int targetFat = goal.targetFat;
+
+  // Define activity status options
+  final List<String> activityOptions = [
+    'Sedentary',
+    'Light',
+    'Moderate',
+    'Active',
+    'Very Active'
+  ];
+
+  // Define goal type options
+  final List<String> goalTypeOptions = [
+    'Weight Loss',
+    'Weight Gain',
+    'Muscle Building',
+    'Maintenance'
+  ];
+
+  // Show date picker for edit goal screen
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final initialDate = isStartDate ? startDate : endDate;
+    final firstDate = isStartDate
+        ? DateTime.now().subtract(const Duration(days: 1))
+        : startDate;
+    final lastDate = isStartDate
+        ? DateTime.now().add(const Duration(days: 365))
+        : DateTime.now().add(const Duration(days: 730));
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppTheme.textPrimaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      if (isStartDate) {
+        startDate = pickedDate;
+        startDateController.text = DateFormat('MMM d, yyyy').format(pickedDate);
+      } else {
+        endDate = pickedDate;
+        endDateController.text = DateFormat('MMM d, yyyy').format(pickedDate);
+      }
+    }
+  }
+
+  // Show full-screen bottom sheet for better UX
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext context) {
+      return StatefulBuilder(builder: (context, setEditState) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.9,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle and title
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Edit Goal',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Form content - same as add goal form but pre-filled
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Goal Type Section
+                        const Text(
+                          'Goal Type',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 16),
+                              isCollapsed: false,
+                            ),
+                            value: goalType,
+                            icon: const Icon(Icons.keyboard_arrow_down),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                            items: goalTypeOptions.map((String type) {
+                              return DropdownMenuItem<String>(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setEditState(() {
+                                  goalType = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Date Section
+                        const Text(
+                          'Duration',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Start Date
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await _selectDate(context, true);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Start Date',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              startDateController.text.isEmpty
+                                                  ? 'Select date'
+                                                  : startDateController.text,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: startDateController
+                                                        .text.isEmpty
+                                                    ? Colors.grey
+                                                    : Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(Icons.calendar_today,
+                                              size: 16, color: Colors.grey),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // End Date
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await _selectDate(context, false);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'End Date',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              endDateController.text.isEmpty
+                                                  ? 'Select date'
+                                                  : endDateController.text,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: endDateController
+                                                        .text.isEmpty
+                                                    ? Colors.grey
+                                                    : Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(Icons.calendar_today,
+                                              size: 16, color: Colors.grey),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!endDate.isAfter(startDate))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'End date must be after start date',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+
+                        // Weight Information (conditional)
+                        if (goalType == 'Weight Loss' ||
+                            goalType == 'Weight Gain') ...[
+                          const Text(
+                            'Weight Goals',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              // Current Weight
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: TextFormField(
+                                    controller: startWeightController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Current Weight',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.auto,
+                                      suffixText: 'kg',
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      border: InputBorder.none,
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Required';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Invalid number';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Target Weight
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: TextFormField(
+                                    controller: desiredWeightController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Target Weight',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.auto,
+                                      suffixText: 'kg',
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      border: InputBorder.none,
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Required';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Invalid number';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Activity Level
+                        const Text(
+                          'Activity Level',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            value: activityStatusPerDay,
+                            icon: const Icon(Icons.keyboard_arrow_down),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                            items: activityOptions.map((String activity) {
+                              return DropdownMenuItem<String>(
+                                value: activity,
+                                child: Text(activity),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setEditState(() {
+                                  activityStatusPerDay = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Meals Per Day
+                        const Text(
+                          'Meals Per Day',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonFormField<int>(
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            value: numberOfMealsPerDay,
+                            icon: const Icon(Icons.keyboard_arrow_down),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                            items: [3, 4, 5, 6].map((int number) {
+                              return DropdownMenuItem<int>(
+                                value: number,
+                                child: Text(number.toString()),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setEditState(() {
+                                  numberOfMealsPerDay = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Nutrition Goals Section
+                        const Text(
+                          'Daily Nutrition Goals',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Calories
+                        _NutritionSliderCard(
+                          icon: Icons.local_fire_department,
+                          iconColor: Colors.orange,
+                          title: 'Calories',
+                          value: targetCalories.toDouble(),
+                          min: 1200.0,
+                          max: 3000.0,
+                          unit: 'kcal',
+                          onChanged: (value) {
+                            setEditState(() {
+                              targetCalories = value.round();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Protein
+                        _NutritionSliderCard(
+                          icon: Icons.fitness_center,
+                          iconColor: Colors.blue,
+                          title: 'Protein',
+                          value: targetProtein.toDouble(),
+                          min: 50.0,
+                          max: 250.0,
+                          unit: 'g',
+                          onChanged: (value) {
+                            setEditState(() {
+                              targetProtein = value.round();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Carbs
+                        _NutritionSliderCard(
+                          icon: Icons.grain,
+                          iconColor: Colors.amber,
+                          title: 'Carbohydrates',
+                          value: targetCarbs.toDouble(),
+                          min: 50.0,
+                          max: 400.0,
+                          unit: 'g',
+                          onChanged: (value) {
+                            setEditState(() {
+                              targetCarbs = value.round();
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Fat
+                        _NutritionSliderCard(
+                          icon: Icons.opacity,
+                          iconColor: Colors.deepPurple,
+                          title: 'Fat',
+                          value: targetFat.toDouble(),
+                          min: 20.0,
+                          max: 150.0,
+                          unit: 'g',
+                          onChanged: (value) {
+                            setEditState(() {
+                              targetFat = value.round();
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom action buttons
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                    24, 16, 24, 16 + MediaQuery.of(context).padding.bottom),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton(
+                        onPressed: () {
+                          // Validate form
+                          if (formKey.currentState?.validate() ?? false) {
+                            // Validate dates
+                            if (!endDate.isAfter(startDate)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'End date must be after start date')),
+                              );
+                              return;
+                            }
+
+                            // Get updated values for weight fields
+                            double? startWeight;
+                            double? desiredWeight;
+
+                            if (startWeightController.text.isNotEmpty) {
+                              startWeight =
+                                  double.parse(startWeightController.text);
+                            }
+
+                            if (desiredWeightController.text.isNotEmpty) {
+                              desiredWeight =
+                                  double.parse(desiredWeightController.text);
+                            }
+
+                            // Create goal object with updates
+                            final updatedGoal = Goal(
+                              id: goal.id, // Keep the same ID
+                              goalType: goalType,
+                              startDate: startDate,
+                              endDate: endDate,
+                              targetCalories: targetCalories,
+                              targetProtein: targetProtein,
+                              targetCarbs: targetCarbs,
+                              targetFat: targetFat,
+                              userId: goal.userId, // Keep the same user ID
+                              startWeight: startWeight,
+                              desiredWeight: desiredWeight,
+                              numberOfMealsPerDay: numberOfMealsPerDay,
+                              activityStatusPerDay: activityStatusPerDay,
+                            );
+
+                            // Update goal using provider
+                            context.read<AppState>().updateGoal(updatedGoal);
+
+                            // Show success message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Goal updated successfully'),
+                              ),
+                            );
+
+                            // Close dialog
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Update Goal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    },
+  );
 }
 
 class _GoalNutritionTarget extends StatelessWidget {
