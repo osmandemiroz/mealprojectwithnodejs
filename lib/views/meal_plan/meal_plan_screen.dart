@@ -1,3 +1,6 @@
+// ignore_for_file: avoid_catches_without_on_clauses, deprecated_member_use, dead_code
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -85,7 +88,9 @@ class _MealPlanScreenState extends State<MealPlanScreen>
       try {
         await _loadMealsForSelectedDate();
       } catch (e) {
-        print('[MealPlanScreen] Error loading meals: $e');
+        if (kDebugMode) {
+          print('[MealPlanScreen] Error loading meals: $e');
+        }
       }
 
       // Check if we need to load recipes (if they're empty)
@@ -95,7 +100,9 @@ class _MealPlanScreenState extends State<MealPlanScreen>
           // After loading recipes, reload meal data again in case it depends on recipes
           await _loadMealsForSelectedDate();
         } catch (e) {
-          print('[MealPlanScreen] Error loading recipes: $e');
+          if (kDebugMode) {
+            print('[MealPlanScreen] Error loading recipes: $e');
+          }
           // Continue anyway with what we have
         }
       }
@@ -106,7 +113,9 @@ class _MealPlanScreenState extends State<MealPlanScreen>
         });
       }
     } catch (e) {
-      print('[MealPlanScreen] Error loading data: $e');
+      if (kDebugMode) {
+        print('[MealPlanScreen] Error loading data: $e');
+      }
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -151,12 +160,12 @@ class _MealPlanScreenState extends State<MealPlanScreen>
                 preparationTime: 0,
                 cookingTime: 0,
                 servings: 0,
-                ingredients: [],
-                instructions: [],
-                categories: [],
+                ingredients: const [],
+                instructions: const [],
+                categories: const [],
                 calories:
                     int.tryParse(mealData['calories']?.toString() ?? '0') ?? 0,
-                nutrients: {},
+                nutrients: const {},
               );
             }
           }
@@ -165,13 +174,16 @@ class _MealPlanScreenState extends State<MealPlanScreen>
 
       if (mounted) {
         setState(() {
-          _selectedMeals.clear();
-          _selectedMeals.addAll(updatedMeals);
+          _selectedMeals
+            ..clear()
+            ..addAll(updatedMeals);
           _calculateDailyNutritionTotals();
         });
       }
     } catch (e) {
-      print('[MealPlanScreen] Error loading meals for date: $e');
+      if (kDebugMode) {
+        print('[MealPlanScreen] Error loading meals for date: $e');
+      }
       // Don't show error to user, just log it
     }
   }
@@ -259,23 +271,23 @@ class _MealPlanScreenState extends State<MealPlanScreen>
                   margin:
                       const EdgeInsets.symmetric(vertical: AppTheme.spacing16),
                   child: FutureBuilder<List<DateTime>>(
-                      future: _storageService.getSavedMealPlanDates(),
-                      builder: (context, snapshot) {
-                        final savedDates = snapshot.data ?? [];
+                    future: _storageService.getSavedMealPlanDates(),
+                    builder: (context, snapshot) {
+                      final savedDates = snapshot.data ?? [];
 
-                        return PageView.builder(
-                          controller: _pageController,
-                          itemBuilder: (context, weekIndex) {
-                            final weekStart = DateTime.now().add(
-                              Duration(
-                                days:
-                                    weekIndex * 7 - DateTime.now().weekday + 1,
-                              ),
-                            );
-                            return _buildWeekCalendar(weekStart, savedDates);
-                          },
-                        );
-                      }),
+                      return PageView.builder(
+                        controller: _pageController,
+                        itemBuilder: (context, weekIndex) {
+                          final weekStart = DateTime.now().add(
+                            Duration(
+                              days: weekIndex * 7 - DateTime.now().weekday + 1,
+                            ),
+                          );
+                          return _buildWeekCalendar(weekStart, savedDates);
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
 
@@ -319,7 +331,8 @@ class _MealPlanScreenState extends State<MealPlanScreen>
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppTheme.spacing24),
+                      vertical: AppTheme.spacing24,
+                    ),
                     child: Text(
                       'Pull down to refresh meal plan',
                       style: AppTheme.bodySmall.copyWith(
@@ -421,7 +434,11 @@ class _MealPlanScreenState extends State<MealPlanScreen>
   }
 
   Widget _buildNutrientStat(
-      String label, String value, String unit, IconData icon) {
+    String label,
+    String value,
+    String unit,
+    IconData icon,
+  ) {
     return Row(
       children: [
         Icon(
@@ -628,13 +645,15 @@ class _MealPlanScreenState extends State<MealPlanScreen>
 
   void _showMealSelectionDialog(String mealType, AppState appState) {
     // Filter recipes based on meal type
-    final List<Recipe> filteredRecipes = appState.recipes.where((recipe) {
+    final filteredRecipes = appState.recipes.where((recipe) {
       // Use categories or recipe name to suggest appropriate meals
       switch (mealType.toLowerCase()) {
         case 'breakfast':
-          return recipe.categories.any((category) =>
-                  category.toLowerCase().contains('breakfast') ||
-                  category.toLowerCase().contains('morning')) ||
+          return recipe.categories.any(
+                (category) =>
+                    category.toLowerCase().contains('breakfast') ||
+                    category.toLowerCase().contains('morning'),
+              ) ||
               recipe.name.toLowerCase().contains('breakfast') ||
               recipe.name.toLowerCase().contains('pancake') ||
               recipe.name.toLowerCase().contains('cereal') ||
@@ -643,29 +662,35 @@ class _MealPlanScreenState extends State<MealPlanScreen>
               recipe.name.toLowerCase().contains('oatmeal') ||
               recipe.name.toLowerCase().contains('smoothie');
         case 'lunch':
-          return recipe.categories.any((category) =>
-                  category.toLowerCase().contains('lunch') ||
-                  category.toLowerCase().contains('salad') ||
-                  category.toLowerCase().contains('sandwich')) ||
+          return recipe.categories.any(
+                (category) =>
+                    category.toLowerCase().contains('lunch') ||
+                    category.toLowerCase().contains('salad') ||
+                    category.toLowerCase().contains('sandwich'),
+              ) ||
               recipe.name.toLowerCase().contains('lunch') ||
               recipe.name.toLowerCase().contains('salad') ||
               recipe.name.toLowerCase().contains('sandwich') ||
               recipe.name.toLowerCase().contains('soup') ||
               recipe.name.toLowerCase().contains('wrap');
         case 'dinner':
-          return recipe.categories.any((category) =>
-                  category.toLowerCase().contains('dinner') ||
-                  category.toLowerCase().contains('main dish') ||
-                  category.toLowerCase().contains('entrée')) ||
+          return recipe.categories.any(
+                (category) =>
+                    category.toLowerCase().contains('dinner') ||
+                    category.toLowerCase().contains('main dish') ||
+                    category.toLowerCase().contains('entrée'),
+              ) ||
               recipe.name.toLowerCase().contains('dinner') ||
               recipe.name.toLowerCase().contains('steak') ||
               recipe.name.toLowerCase().contains('pasta') ||
               recipe.name.toLowerCase().contains('curry') ||
               recipe.name.toLowerCase().contains('roast');
         case 'snacks':
-          return recipe.categories.any((category) =>
-                  category.toLowerCase().contains('snack') ||
-                  category.toLowerCase().contains('appetizer')) ||
+          return recipe.categories.any(
+                (category) =>
+                    category.toLowerCase().contains('snack') ||
+                    category.toLowerCase().contains('appetizer'),
+              ) ||
               recipe.name.toLowerCase().contains('snack') ||
               recipe.name.toLowerCase().contains('chips') ||
               recipe.name.toLowerCase().contains('nuts') ||
@@ -677,173 +702,179 @@ class _MealPlanScreenState extends State<MealPlanScreen>
     }).toList();
 
     // Show "All Recipes" option if filtered list is too restrictive
-    final bool showAllOption =
+    final showAllOption =
         filteredRecipes.length < appState.recipes.length * 0.3;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(builder: (context, setState) {
-        // Track if we're showing all recipes or filtered ones
-        bool showingAll = false;
-        List<Recipe> displayedRecipes =
-            showingAll ? appState.recipes : filteredRecipes;
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Track if we're showing all recipes or filtered ones
+          var showingAll = false;
 
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: AppTheme.backgroundColor,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(AppTheme.borderRadiusLarge),
-              topRight: Radius.circular(AppTheme.borderRadiusLarge),
+          var displayedRecipes =
+              showingAll ? appState.recipes : filteredRecipes;
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppTheme.borderRadiusLarge),
+                topRight: Radius.circular(AppTheme.borderRadiusLarge),
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              // Handle
-              Container(
-                margin: const EdgeInsets.only(top: AppTheme.spacing8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
+            child: Column(
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: AppTheme.spacing8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
 
-              // Title and filter toggle
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing16,
-                  vertical: AppTheme.spacing12,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Select $mealType',
-                            style: AppTheme.headlineMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (showAllOption)
-                            Text(
-                              showingAll
-                                  ? 'Showing all recipes'
-                                  : 'Showing suggested recipes for $mealType',
-                              style: AppTheme.bodySmall.copyWith(
-                                color: AppTheme.textSecondaryColor,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (showAllOption)
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            showingAll = !showingAll;
-                            displayedRecipes =
-                                showingAll ? appState.recipes : filteredRecipes;
-                          });
-                        },
-                        icon: Icon(
-                          showingAll
-                              ? Icons.filter_list
-                              : Icons.filter_list_off,
-                          size: 18,
-                        ),
-                        label: Text(showingAll ? 'Show Suggested' : 'Show All'),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Recipes list
-              Expanded(
-                child: displayedRecipes.isEmpty
-                    ? Center(
+                // Title and filter toggle
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing16,
+                    vertical: AppTheme.spacing12,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.restaurant_menu,
-                              size: 64,
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                            const SizedBox(height: AppTheme.spacing16),
                             Text(
-                              'No Recipes Available',
-                              style: AppTheme.displaySmall.copyWith(
-                                color: AppTheme.textPrimaryColor,
+                              'Select $mealType',
+                              style: AppTheme.headlineMedium.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: AppTheme.spacing8),
-                            Text(
-                              showingAll
-                                  ? 'Add recipes to select for your meals'
-                                  : 'No suggested recipes found for $mealType',
-                              style: AppTheme.bodyMedium.copyWith(
-                                color: AppTheme.textSecondaryColor,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (!showingAll && showAllOption)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    top: AppTheme.spacing16),
-                                child: FilledButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      showingAll = true;
-                                      displayedRecipes = appState.recipes;
-                                    });
-                                  },
-                                  icon: const Icon(Icons.all_inclusive),
-                                  label: const Text('Show All Recipes'),
+                            if (showAllOption)
+                              Text(
+                                showingAll
+                                    ? 'Showing all recipes'
+                                    : 'Showing suggested recipes for $mealType',
+                                style: AppTheme.bodySmall.copyWith(
+                                  color: AppTheme.textSecondaryColor,
                                 ),
                               ),
                           ],
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(AppTheme.spacing16),
-                        itemCount: displayedRecipes.length,
-                        separatorBuilder: (context, index) => const SizedBox(
-                          height: AppTheme.spacing12,
-                        ),
-                        itemBuilder: (context, index) {
-                          final recipe = displayedRecipes[index];
-
-                          // Add a "Recommended" badge for top suggested recipes
-                          final isRecommended = !showingAll &&
-                              filteredRecipes.indexOf(recipe) < 3 &&
-                              displayedRecipes.length > 5;
-
-                          return _RecipeListItem(
-                            recipe: recipe,
-                            onTap: () {
-                              this.setState(() {
-                                _selectedMeals[mealType] = recipe;
-                                _calculateDailyNutritionTotals();
-                                // Save the updated meal plan
-                                _saveMealsForSelectedDate();
-                              });
-                              Navigator.pop(context);
-                            },
-                            isRecommended: isRecommended,
-                          );
-                        },
                       ),
-              ),
-            ],
-          ),
-        );
-      }),
+                      if (showAllOption)
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              showingAll = !showingAll;
+                              displayedRecipes = showingAll
+                                  ? appState.recipes
+                                  : filteredRecipes;
+                            });
+                          },
+                          icon: Icon(
+                            showingAll
+                                ? Icons.filter_list
+                                : Icons.filter_list_off,
+                            size: 18,
+                          ),
+                          label:
+                              Text(showingAll ? 'Show Suggested' : 'Show All'),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Recipes list
+                Expanded(
+                  child: displayedRecipes.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.restaurant_menu,
+                                size: 64,
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                              const SizedBox(height: AppTheme.spacing16),
+                              Text(
+                                'No Recipes Available',
+                                style: AppTheme.displaySmall.copyWith(
+                                  color: AppTheme.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.spacing8),
+                              Text(
+                                showingAll
+                                    ? 'Add recipes to select for your meals'
+                                    : 'No suggested recipes found for $mealType',
+                                style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (!showingAll && showAllOption)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: AppTheme.spacing16,
+                                  ),
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        showingAll = true;
+                                        displayedRecipes = appState.recipes;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.all_inclusive),
+                                    label: const Text('Show All Recipes'),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(AppTheme.spacing16),
+                          itemCount: displayedRecipes.length,
+                          separatorBuilder: (context, index) => const SizedBox(
+                            height: AppTheme.spacing12,
+                          ),
+                          itemBuilder: (context, index) {
+                            final recipe = displayedRecipes[index];
+
+                            // Add a "Recommended" badge for top suggested recipes
+                            final isRecommended = !showingAll &&
+                                filteredRecipes.indexOf(recipe) < 3 &&
+                                displayedRecipes.length > 5;
+
+                            return _RecipeListItem(
+                              recipe: recipe,
+                              onTap: () {
+                                this.setState(() {
+                                  _selectedMeals[mealType] = recipe;
+                                  _calculateDailyNutritionTotals();
+                                  // Save the updated meal plan
+                                  _saveMealsForSelectedDate();
+                                });
+                                Navigator.pop(context);
+                              },
+                              isRecommended: isRecommended,
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -921,9 +952,9 @@ class _RecipeListItem extends StatelessWidget {
                           horizontal: 6,
                           vertical: 2,
                         ),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppTheme.primaryColor,
-                          borderRadius: const BorderRadius.only(
+                          borderRadius: BorderRadius.only(
                             topLeft:
                                 Radius.circular(AppTheme.borderRadiusSmall),
                             bottomRight:

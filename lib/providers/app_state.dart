@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores, avoid_positional_boolean_parameters
 
 import 'package:flutter/foundation.dart';
 
@@ -72,15 +72,15 @@ class AppState extends ChangeNotifier {
 
   // Nutrients filters
   bool _proteinFilterActive = false;
-  double _proteinValue = 20.0;
+  double _proteinValue = 20;
   FilterMode _proteinFilterMode = FilterMode.more;
 
   bool _carbsFilterActive = false;
-  double _carbsValue = 30.0;
+  double _carbsValue = 30;
   FilterMode _carbsFilterMode = FilterMode.less;
 
   bool _fatFilterActive = false;
-  double _fatValue = 10.0;
+  double _fatValue = 10;
   FilterMode _fatFilterMode = FilterMode.less;
 
   // Getters
@@ -157,24 +157,24 @@ class AppState extends ChangeNotifier {
           recipe.categories.contains(_selectedCategory);
 
       // Apply advanced filters if active
-      bool passesAdvancedFilters = true;
+      var passesAdvancedFilters = true;
 
       if (_advancedFiltersActive) {
         // Apply calories filter
         if (_caloriesFilterActive) {
           switch (_caloriesFilterMode) {
             case FilterMode.less:
-              if (recipe.calories >= _caloriesValue)
+              if (recipe.calories >= _caloriesValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.exactly:
-              if (recipe.calories != _caloriesValue)
+              if (recipe.calories != _caloriesValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.more:
-              if (recipe.calories <= _caloriesValue)
+              if (recipe.calories <= _caloriesValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
           }
         }
 
@@ -183,17 +183,17 @@ class AppState extends ChangeNotifier {
           final totalPrepTime = recipe.preparationTime + recipe.cookingTime;
           switch (_prepTimeFilterMode) {
             case FilterMode.less:
-              if (totalPrepTime >= _prepTimeValue)
+              if (totalPrepTime >= _prepTimeValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.exactly:
-              if (totalPrepTime != _prepTimeValue)
+              if (totalPrepTime != _prepTimeValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.more:
-              if (totalPrepTime <= _prepTimeValue)
+              if (totalPrepTime <= _prepTimeValue) {
                 passesAdvancedFilters = false;
-              break;
+              }
           }
         }
 
@@ -203,14 +203,12 @@ class AppState extends ChangeNotifier {
           switch (_proteinFilterMode) {
             case FilterMode.less:
               if (protein >= _proteinValue) passesAdvancedFilters = false;
-              break;
             case FilterMode.exactly:
-              if ((protein - _proteinValue).abs() > 0.1)
+              if ((protein - _proteinValue).abs() > 0.1) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.more:
               if (protein <= _proteinValue) passesAdvancedFilters = false;
-              break;
           }
         }
 
@@ -220,14 +218,12 @@ class AppState extends ChangeNotifier {
           switch (_carbsFilterMode) {
             case FilterMode.less:
               if (carbs >= _carbsValue) passesAdvancedFilters = false;
-              break;
             case FilterMode.exactly:
-              if ((carbs - _carbsValue).abs() > 0.1)
+              if ((carbs - _carbsValue).abs() > 0.1) {
                 passesAdvancedFilters = false;
-              break;
+              }
             case FilterMode.more:
               if (carbs <= _carbsValue) passesAdvancedFilters = false;
-              break;
           }
         }
 
@@ -237,13 +233,10 @@ class AppState extends ChangeNotifier {
           switch (_fatFilterMode) {
             case FilterMode.less:
               if (fat >= _fatValue) passesAdvancedFilters = false;
-              break;
             case FilterMode.exactly:
               if ((fat - _fatValue).abs() > 0.1) passesAdvancedFilters = false;
-              break;
             case FilterMode.more:
               if (fat <= _fatValue) passesAdvancedFilters = false;
-              break;
           }
         }
       }
@@ -372,7 +365,7 @@ class AppState extends ChangeNotifier {
       final updatedRecipe = recipe.copyWith(isFavorite: !recipe.isFavorite);
 
       // Determine meal type if it's being favorited and not already set
-      MealType mealType = recipe.mealType;
+      var mealType = recipe.mealType;
       if (!recipe.isFavorite && mealType == MealType.any) {
         mealType = recipe.determineMealType();
       }
@@ -410,7 +403,8 @@ class AppState extends ChangeNotifier {
     try {
       if (kDebugMode) {
         print(
-            '[_saveFavoriteStatus] Saving favorite status for ${recipe.name}: ${recipe.isFavorite}');
+          '[_saveFavoriteStatus] Saving favorite status for ${recipe.name}: ${recipe.isFavorite}',
+        );
       }
 
       // Get current list of favorite recipe IDs
@@ -444,7 +438,8 @@ class AppState extends ChangeNotifier {
     try {
       if (kDebugMode) {
         print(
-            '[_saveRecipeMealType] Saving meal type for recipe $recipeId: ${mealType.name}');
+          '[_saveRecipeMealType] Saving meal type for recipe $recipeId: ${mealType.name}',
+        );
       }
 
       // Save the meal type to storage
@@ -499,7 +494,8 @@ class AppState extends ChangeNotifier {
 
       if (kDebugMode) {
         print(
-            '[_loadLocalFavoriteData] Loaded ${favoriteIds.length} favorites and ${mealTypes.length} meal types');
+          '[_loadLocalFavoriteData] Loaded ${favoriteIds.length} favorites and ${mealTypes.length} meal types',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -599,7 +595,9 @@ class AppState extends ChangeNotifier {
         _goals = await _apiService.getGoals();
       } catch (e) {
         // If API fails, load from local storage
-        print('[loadGoals] API error, falling back to local storage: $e');
+        if (kDebugMode) {
+          print('[loadGoals] API error, falling back to local storage: $e');
+        }
         _goals = await _storageService.loadUserGoals();
       }
 
@@ -626,7 +624,9 @@ class AppState extends ChangeNotifier {
         // Update the in-memory goals list with active goals
         _goals = _mergeGoals(_goals, activeGoals);
       } catch (e) {
-        print('[loadActiveGoals] API error: $e');
+        if (kDebugMode) {
+          print('[loadActiveGoals] API error: $e');
+        }
         // In case of error, we continue with the goals we already have
       }
       _error = null;
@@ -646,7 +646,9 @@ class AppState extends ChangeNotifier {
         // Update the in-memory goals list with completed goals
         _goals = _mergeGoals(_goals, completedGoals);
       } catch (e) {
-        print('[loadCompletedGoals] API error: $e');
+        if (kDebugMode) {
+          print('[loadCompletedGoals] API error: $e');
+        }
         // In case of error, we continue with the goals we already have
       }
       _error = null;
@@ -659,8 +661,8 @@ class AppState extends ChangeNotifier {
 
   /// Merge new goals with existing goals, avoiding duplicates
   List<Goal> _mergeGoals(List<Goal> existingGoals, List<Goal> newGoals) {
-    final Map<String, Goal> goalMap = {
-      for (final goal in existingGoals) goal.id: goal
+    final goalMap = <String, Goal>{
+      for (final goal in existingGoals) goal.id: goal,
     };
 
     // Add or update with new goals
@@ -675,9 +677,11 @@ class AppState extends ChangeNotifier {
     _setLoading(true);
     try {
       // Check if there's already an active goal
-      final hasActiveGoal = _goals.any((g) =>
-          g.endDate.isAfter(DateTime.now()) &&
-          g.startDate.isBefore(DateTime.now()));
+      final hasActiveGoal = _goals.any(
+        (g) =>
+            g.endDate.isAfter(DateTime.now()) &&
+            g.startDate.isBefore(DateTime.now()),
+      );
 
       if (hasActiveGoal) {
         _error = 'You can only have one active goal at a time';
@@ -691,7 +695,9 @@ class AppState extends ChangeNotifier {
         newGoal = await _apiService.createGoal(goal);
       } catch (e) {
         // If API fails, create a local ID and use the provided goal
-        print('[addGoal] API error, using local storage only: $e');
+        if (kDebugMode) {
+          print('[addGoal] API error, using local storage only: $e');
+        }
 
         // Create a local ID if not provided
         if (goal.id.isEmpty) {
@@ -743,7 +749,9 @@ class AppState extends ChangeNotifier {
         updatedGoal = await _apiService.updateGoal(goal);
       } catch (e) {
         // If API fails, just use the provided goal
-        print('[updateGoal] API error, using local storage only: $e');
+        if (kDebugMode) {
+          print('[updateGoal] API error, using local storage only: $e');
+        }
         updatedGoal = goal;
       }
 
@@ -778,7 +786,9 @@ class AppState extends ChangeNotifier {
         await _apiService.deleteGoal(goalId);
       } catch (e) {
         // If API fails, just continue with local delete
-        print('[deleteGoal] API error, using local storage only: $e');
+        if (kDebugMode) {
+          print('[deleteGoal] API error, using local storage only: $e');
+        }
       }
 
       // Update in-memory list of goals
@@ -806,7 +816,9 @@ class AppState extends ChangeNotifier {
     try {
       await _storageService.saveUserGoals(_goals);
     } catch (e) {
-      print('[_saveGoalsToLocalStorage] Error saving goals: $e');
+      if (kDebugMode) {
+        print('[_saveGoalsToLocalStorage] Error saving goals: $e');
+      }
     }
   }
 
@@ -816,7 +828,9 @@ class AppState extends ChangeNotifier {
       await _storageService.saveActiveGoal(goal);
       notifyListeners();
     } catch (e) {
-      print('[setActiveGoal] Error setting active goal: $e');
+      if (kDebugMode) {
+        print('[setActiveGoal] Error setting active goal: $e');
+      }
     }
   }
 
@@ -825,7 +839,9 @@ class AppState extends ChangeNotifier {
     try {
       return await _storageService.loadActiveGoal();
     } catch (e) {
-      print('[getActiveGoal] Error getting active goal: $e');
+      if (kDebugMode) {
+        print('[getActiveGoal] Error getting active goal: $e');
+      }
       return null;
     }
   }

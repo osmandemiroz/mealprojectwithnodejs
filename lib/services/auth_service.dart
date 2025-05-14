@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -28,7 +30,7 @@ class AuthService with ChangeNotifier {
   Future<String> getCurrentUserId() async {
     // First check if we have a current user with ID
     if (_currentUser != null) {
-      final String? userId = _currentUser!.id;
+      final userId = _currentUser!.id;
       if (userId != null && userId.isNotEmpty) {
         return userId;
       }
@@ -36,13 +38,12 @@ class AuthService with ChangeNotifier {
 
     // Try to load from shared preferences as fallback
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userJson = prefs.getString('user');
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user');
 
       if (userJson != null) {
-        final Map<String, dynamic> userData =
-            jsonDecode(userJson) as Map<String, dynamic>;
-        final String? id = userData['id'] as String?;
+        final userData = jsonDecode(userJson) as Map<String, dynamic>;
+        final id = userData['id'] as String?;
         if (id != null && id.isNotEmpty) {
           return id;
         }
@@ -59,8 +60,8 @@ class AuthService with ChangeNotifier {
   Future<void> init() async {
     _setLoading(true);
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userJson = prefs.getString('user');
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user');
 
       if (userJson != null) {
         _currentUser =
@@ -68,7 +69,7 @@ class AuthService with ChangeNotifier {
         _isAuthenticated = true;
       }
     } catch (e) {
-      _setError('Failed to initialize: ${e.toString()}');
+      _setError('Failed to initialize: $e');
       debugPrint('[AuthService.init] Error: $e');
     } finally {
       _setLoading(false);
@@ -87,7 +88,7 @@ class AuthService with ChangeNotifier {
 
     try {
       // Validate email format
-      final bool isValidEmail =
+      final isValidEmail =
           RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
       if (!isValidEmail) {
         _setError('Please enter a valid email address');
@@ -113,7 +114,7 @@ class AuthService with ChangeNotifier {
 
       return true;
     } catch (e) {
-      _setError('Registration failed: ${e.toString()}');
+      _setError('Registration failed: $e');
       debugPrint('[AuthService.registerBasicInfo] Error: $e');
       return false;
     } finally {
@@ -135,7 +136,8 @@ class AuthService with ChangeNotifier {
     try {
       if (_currentUser == null) {
         throw Exception(
-            'No user data available. Please complete basic registration first.');
+          'No user data available. Please complete basic registration first.',
+        );
       }
 
       // Create a complete user object
@@ -148,10 +150,10 @@ class AuthService with ChangeNotifier {
       );
 
       // Format the full name by combining first name and surname to match backend expectation
-      final String fullName = '${user.name} ${user.surname}';
+      final fullName = '${user.name} ${user.surname}';
 
       // Format user data to match the backend's expected format
-      final Map<String, dynamic> userData = {
+      final userData = <String, dynamic>{
         'name': fullName,
         'email': user.email,
         'password': user.password, // Backend expects a password field
@@ -183,7 +185,7 @@ class AuthService with ChangeNotifier {
               user.copyWith(id: responseData['userId']?.toString());
 
           // Save to shared preferences
-          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          final prefs = await SharedPreferences.getInstance();
           await prefs.setString('user', jsonEncode(updatedUser.toJson()));
 
           _currentUser = updatedUser;
@@ -194,17 +196,19 @@ class AuthService with ChangeNotifier {
         } else {
           // Use local fallback without showing an error to the user
           debugPrint(
-              '[AuthService.completeRegistration] Server error: ${response.statusCode} - ${response.body}');
+            '[AuthService.completeRegistration] Server error: ${response.statusCode} - ${response.body}',
+          );
           return _useLocalFallback(user);
         }
       } catch (networkError) {
         // If server is not available, use local fallback
         debugPrint(
-            '[AuthService.completeRegistration] Network error: $networkError');
+          '[AuthService.completeRegistration] Network error: $networkError',
+        );
         return _useLocalFallback(user);
       }
     } catch (e) {
-      _setError('Registration failed: ${e.toString()}');
+      _setError('Registration failed: $e');
       debugPrint('[AuthService.completeRegistration] Error: $e');
       return false;
     } finally {
@@ -221,7 +225,7 @@ class AuthService with ChangeNotifier {
           user.copyWith(id: 'local-${DateTime.now().millisecondsSinceEpoch}');
 
       // Save to shared preferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', jsonEncode(updatedUser.toJson()));
 
       _currentUser = updatedUser;
@@ -230,7 +234,7 @@ class AuthService with ChangeNotifier {
 
       return true;
     } catch (e) {
-      _setError('Failed to save user data locally: ${e.toString()}');
+      _setError('Failed to save user data locally: $e');
       return false;
     }
   }
@@ -248,7 +252,7 @@ class AuthService with ChangeNotifier {
       }
 
       // Check valid email format
-      final bool isValidEmail =
+      final isValidEmail =
           RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
       if (!isValidEmail) {
         _setError('Please enter a valid email address');
@@ -264,8 +268,7 @@ class AuthService with ChangeNotifier {
 
         if (response.statusCode == 200) {
           try {
-            final List<dynamic> users =
-                jsonDecode(response.body) as List<dynamic>;
+            final users = jsonDecode(response.body) as List<dynamic>;
 
             // Find the user with matching email
             final user = users.cast<Map<String, dynamic>>().firstWhere(
@@ -275,28 +278,30 @@ class AuthService with ChangeNotifier {
 
             if (user.isNotEmpty) {
               // For demo purposes, any password works if email exists
-              return _loginSuccess(User(
-                id: user['UID']?.toString() ??
-                    'server-${DateTime.now().millisecondsSinceEpoch}',
-                name: _extractFirstName(user['Name']?.toString() ?? 'User'),
-                surname:
-                    _extractLastName(user['Name']?.toString() ?? 'Account'),
-                email: email,
-                password: password,
-                weight: user['Weight'] != null
-                    ? double.parse(user['Weight'].toString())
-                    : null,
-                height: user['Height'] != null
-                    ? double.parse(user['Height'].toString())
-                    : null,
-                age: user['Age'] != null
-                    ? int.parse(user['Age'].toString())
-                    : null,
-                gender: user['GENDER']?.toString(),
-                allergies: user['Dietary_Preferences'] != null
-                    ? (user['Dietary_Preferences'] as String).split(', ')
-                    : null,
-              ));
+              return _loginSuccess(
+                User(
+                  id: user['UID']?.toString() ??
+                      'server-${DateTime.now().millisecondsSinceEpoch}',
+                  name: _extractFirstName(user['Name']?.toString() ?? 'User'),
+                  surname:
+                      _extractLastName(user['Name']?.toString() ?? 'Account'),
+                  email: email,
+                  password: password,
+                  weight: user['Weight'] != null
+                      ? double.parse(user['Weight'].toString())
+                      : null,
+                  height: user['Height'] != null
+                      ? double.parse(user['Height'].toString())
+                      : null,
+                  age: user['Age'] != null
+                      ? int.parse(user['Age'].toString())
+                      : null,
+                  gender: user['GENDER']?.toString(),
+                  allergies: user['Dietary_Preferences'] != null
+                      ? (user['Dietary_Preferences'] as String).split(', ')
+                      : null,
+                ),
+              );
             }
           } catch (parseError) {
             debugPrint('[AuthService.login] Parse error: $parseError');
@@ -311,7 +316,7 @@ class AuthService with ChangeNotifier {
         return _loginWithLocalFallback(email, password);
       }
     } catch (e) {
-      _setError('Login failed: ${e.toString()}');
+      _setError('Login failed: $e');
       debugPrint('[AuthService.login] Error: $e');
       return false;
     } finally {
@@ -334,8 +339,8 @@ class AuthService with ChangeNotifier {
   /// Login with local fallback when server is unavailable
   Future<bool> _loginWithLocalFallback(String email, String password) async {
     // Check if we have saved users in shared preferences that match these credentials
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? existingUserJson = prefs.getString('user');
+    final prefs = await SharedPreferences.getInstance();
+    final existingUserJson = prefs.getString('user');
 
     if (existingUserJson != null) {
       try {
@@ -347,25 +352,28 @@ class AuthService with ChangeNotifier {
         }
       } catch (e) {
         debugPrint(
-            '[AuthService.loginWithLocalFallback] Error parsing saved user: $e');
+          '[AuthService.loginWithLocalFallback] Error parsing saved user: $e',
+        );
       }
     }
 
     // Create a demo user if no matching user was found
-    return _loginSuccess(User(
-      id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-      name: 'Demo',
-      surname: 'User',
-      email: email,
-      password: password,
-    ));
+    return _loginSuccess(
+      User(
+        id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Demo',
+        surname: 'User',
+        email: email,
+        password: password,
+      ),
+    );
   }
 
   /// Common login success handler
   Future<bool> _loginSuccess(User user) async {
     try {
       // Save to shared preferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', jsonEncode(user.toJson()));
 
       _currentUser = user;
@@ -374,7 +382,7 @@ class AuthService with ChangeNotifier {
 
       return true;
     } catch (e) {
-      _setError('Failed to save login information: ${e.toString()}');
+      _setError('Failed to save login information: $e');
       return false;
     }
   }
@@ -385,14 +393,14 @@ class AuthService with ChangeNotifier {
 
     try {
       // Clear shared preferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user');
 
       _currentUser = null;
       _isAuthenticated = false;
       notifyListeners();
     } catch (e) {
-      _setError('Logout failed: ${e.toString()}');
+      _setError('Logout failed: $e');
       debugPrint('[AuthService.logout] Error: $e');
     } finally {
       _setLoading(false);

@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set preferred orientations
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
@@ -34,7 +34,7 @@ void main() async {
   );
 
   // Enable edge-to-edge for both platforms
-  SystemChrome.setEnabledSystemUIMode(
+  await SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
   );
 
@@ -45,21 +45,22 @@ void main() async {
   final storageService = StorageService();
   await storageService.init();
 
-  runApp(MyApp(
-    authService: authService,
-    storageService: storageService,
-  ));
+  runApp(
+    MyApp(
+      authService: authService,
+      storageService: storageService,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  final AuthService authService;
-  final StorageService storageService;
-
   const MyApp({
-    super.key,
     required this.authService,
     required this.storageService,
+    super.key,
   });
+  final AuthService authService;
+  final StorageService storageService;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +82,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/home': (context) => const HomeScreen(),
           '/login': (context) => const LoginScreen(),
-          '/meal-plan': (context) => const HomeScreen(initialTab: 0),
+          '/meal-plan': (context) => const HomeScreen(),
           '/recipes': (context) => const HomeScreen(initialTab: 1),
           '/goals': (context) => const HomeScreen(initialTab: 2),
           '/settings': (context) => const HomeScreen(initialTab: 3),

@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_unnecessary_containers, omit_local_variable_types, document_ignores
+// ignore_for_file: avoid_unnecessary_containers, omit_local_variable_types, document_ignores, deprecated_member_use
 
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (_height <= 0) return;
 
     // BMI formula: weight (kg) / (height (m))²
-    double heightInMeters = _height / 100;
+    final double heightInMeters = _height / 100;
     _bmi = _weight / (heightInMeters * heightInMeters);
 
     // Categorize BMI value
@@ -122,7 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   'Select your ${type.toLowerCase()}',
                   style: AppTheme.headlineMedium,
@@ -141,9 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     ).then((_) {
       // Calculate BMI after closing the picker
-      setState(() {
-        _calculateBMI();
-      });
+      setState(_calculateBMI);
     });
   }
 
@@ -253,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (currentUser != null) {
       // Create updated user with new data
-      final updatedUser = currentUser.copyWith(
+      currentUser.copyWith(
         name: _nameController.text,
         surname: _surnameController.text,
         weight: _weight,
@@ -375,26 +373,28 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildSection(
               title: 'Personal Information',
               children: [
-                _isEditing
-                    ? _buildTextField(
-                        controller: _nameController,
-                        label: 'First Name',
-                      )
-                    : _buildInfoTile(
-                        icon: Icons.person_outline,
-                        title: 'First Name',
-                        value: user.name,
-                      ),
-                _isEditing
-                    ? _buildTextField(
-                        controller: _surnameController,
-                        label: 'Last Name',
-                      )
-                    : _buildInfoTile(
-                        icon: Icons.person_outline,
-                        title: 'Last Name',
-                        value: user.surname,
-                      ),
+                if (_isEditing)
+                  _buildTextField(
+                    controller: _nameController,
+                    label: 'First Name',
+                  )
+                else
+                  _buildInfoTile(
+                    icon: Icons.person_outline,
+                    title: 'First Name',
+                    value: user.name,
+                  ),
+                if (_isEditing)
+                  _buildTextField(
+                    controller: _surnameController,
+                    label: 'Last Name',
+                  )
+                else
+                  _buildInfoTile(
+                    icon: Icons.person_outline,
+                    title: 'Last Name',
+                    value: user.surname,
+                  ),
                 _buildInfoTile(
                   icon: Icons.email_outlined,
                   title: 'Email',
@@ -494,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'BMI (Body Mass Index)',
                 style: AppTheme.headlineMedium,
               ),
@@ -632,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               if (onTap != null)
-                Icon(
+                const Icon(
                   Icons.chevron_right,
                   color: AppTheme.textSecondaryColor,
                   size: 20,

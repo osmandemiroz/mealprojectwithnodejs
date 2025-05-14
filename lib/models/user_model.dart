@@ -1,17 +1,6 @@
 // ignore_for_file: always_put_required_named_parameters_first
 
 class User {
-  final String? id;
-  final String name;
-  final String surname;
-  final String email;
-  final String password;
-  final double? weight;
-  final double? height;
-  final int? age;
-  final String? gender;
-  final List<String>? allergies;
-
   /// Creates a new User instance with basic and health information
   ///
   /// Required fields for initial registration: [name], [surname], [email], [password]
@@ -50,6 +39,16 @@ class User {
           : null,
     );
   }
+  final String? id;
+  final String name;
+  final String surname;
+  final String email;
+  final String password;
+  final double? weight;
+  final double? height;
+  final int? age;
+  final String? gender;
+  final List<String>? allergies;
 
   /// Convert User to JSON for API requests
   Map<String, dynamic> toJson() {

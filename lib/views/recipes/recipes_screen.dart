@@ -1,4 +1,4 @@
-// ignore_for_file: inference_failure_on_instance_creation, document_ignores
+// ignore_for_file: inference_failure_on_instance_creation, document_ignores, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -74,35 +74,30 @@ class _RecipesScreenState extends State<RecipesScreen>
       case 0: // All Recipes
         appState.setShowOnlyFavorites(false);
         appState.setMealTypeFilter(MealType.any);
-        break;
       case 1: // Favorites
         appState.setShowOnlyFavorites(true);
         appState.setMealTypeFilter(MealType.any);
-        break;
       case 2: // Breakfast
         appState.setShowOnlyFavorites(true);
         appState.setMealTypeFilter(MealType.breakfast);
-        break;
       case 3: // Lunch
         appState.setShowOnlyFavorites(true);
         appState.setMealTypeFilter(MealType.lunch);
-        break;
       case 4: // Dinner
         appState.setShowOnlyFavorites(true);
         appState.setMealTypeFilter(MealType.dinner);
-        break;
       case 5: // Snacks
         appState.setShowOnlyFavorites(true);
         appState.setMealTypeFilter(MealType.snack);
-        break;
     }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
+    _tabController
+      ..removeListener(_handleTabChange)
+      ..dispose();
     super.dispose();
   }
 
@@ -148,8 +143,8 @@ class _RecipesScreenState extends State<RecipesScreen>
             appState.recipes.isNotEmpty && displayedRecipes.isEmpty;
 
         // Show appropriate empty state message
-        String emptyStateMessage = '';
-        IconData emptyStateIcon = Icons.search_off;
+        var emptyStateMessage = '';
+        var emptyStateIcon = Icons.search_off;
 
         if (isEmptyResults) {
           if (_currentTabIndex == 0) {
@@ -193,7 +188,7 @@ class _RecipesScreenState extends State<RecipesScreen>
                 indicator: const UnderlineTabIndicator(
                   borderSide: BorderSide(
                     color: AppTheme.primaryColor,
-                    width: 2.0,
+                    width: 2,
                   ),
                 ),
               ),
@@ -322,7 +317,7 @@ class _RecipesScreenState extends State<RecipesScreen>
                     ),
 
                     // Advanced Filters Panel
-                    SliverToBoxAdapter(
+                    const SliverToBoxAdapter(
                       child: RecipeFilterPanel(),
                     ),
 
@@ -460,9 +455,11 @@ class _RecipesScreenState extends State<RecipesScreen>
   String _formatCategoryName(String name) {
     return name
         .split('-')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1)}'
-            : '')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1)}'
+              : '',
+        )
         .join(' ');
   }
 

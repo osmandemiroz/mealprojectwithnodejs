@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/goal.dart';
@@ -7,14 +10,13 @@ import '../models/recipe.dart';
 
 /// Service to handle local storage operations
 class StorageService {
+  // Factory constructor to return the singleton instance
+  factory StorageService() => _instance;
   // Private constructor for singleton pattern
   StorageService._();
 
   // Singleton instance
   static final StorageService _instance = StorageService._();
-
-  // Factory constructor to return the singleton instance
-  factory StorageService() => _instance;
 
   // Keys for shared preferences
   static const String _favoriteRecipesKey = 'favorite_recipes';
@@ -45,8 +47,7 @@ class StorageService {
   Future<void> saveRecipeMealType(String recipeId, MealType mealType) async {
     final prefs = await SharedPreferences.getInstance();
     final mealTypesJson = prefs.getString(_recipeMealTypesKey) ?? '{}';
-    final Map<String, dynamic> mealTypes =
-        json.decode(mealTypesJson) as Map<String, dynamic>;
+    final mealTypes = json.decode(mealTypesJson) as Map<String, dynamic>;
 
     // Update the map with the new meal type
     mealTypes[recipeId] = mealType.name;
@@ -59,11 +60,10 @@ class StorageService {
   Future<Map<String, MealType>> loadRecipeMealTypes() async {
     final prefs = await SharedPreferences.getInstance();
     final mealTypesJson = prefs.getString(_recipeMealTypesKey) ?? '{}';
-    final Map<String, dynamic> mealTypes =
-        json.decode(mealTypesJson) as Map<String, dynamic>;
+    final mealTypes = json.decode(mealTypesJson) as Map<String, dynamic>;
 
     // Convert the string values to MealType enum values
-    final Map<String, MealType> result = {};
+    final result = <String, MealType>{};
     mealTypes.forEach((key, value) {
       result[key] = MealTypeExtension.fromString(value as String);
     });
@@ -73,11 +73,12 @@ class StorageService {
 
   /// Save daily meal plan for a specific date to local storage
   Future<void> saveDailyMealPlan(
-      DateTime date, Map<String, Map<String, dynamic>> mealsByType) async {
+    DateTime date,
+    Map<String, Map<String, dynamic>> mealsByType,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
-    final Map<String, dynamic> allMealPlans =
-        json.decode(mealsJson) as Map<String, dynamic>;
+    final allMealPlans = json.decode(mealsJson) as Map<String, dynamic>;
 
     // Convert DateTime to string in format yyyy-MM-dd for storage
     final dateStr = _formatDateForStorage(date);
@@ -88,22 +89,26 @@ class StorageService {
     // Save the updated map back to shared preferences
     await prefs.setString(_dailyMealPlansKey, json.encode(allMealPlans));
 
-    print('[saveDailyMealPlan] Saved meal plan for $dateStr');
+    if (kDebugMode) {
+      print('[saveDailyMealPlan] Saved meal plan for $dateStr');
+    }
   }
 
   /// Load daily meal plan for a specific date from local storage
   Future<Map<String, Map<String, dynamic>>?> loadDailyMealPlan(
-      DateTime date) async {
+    DateTime date,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
-    final Map<String, dynamic> allMealPlans =
-        json.decode(mealsJson) as Map<String, dynamic>;
+    final allMealPlans = json.decode(mealsJson) as Map<String, dynamic>;
 
     // Convert DateTime to string in format yyyy-MM-dd for retrieval
     final dateStr = _formatDateForStorage(date);
 
     if (allMealPlans.containsKey(dateStr)) {
-      print('[loadDailyMealPlan] Loaded meal plan for $dateStr');
+      if (kDebugMode) {
+        print('[loadDailyMealPlan] Loaded meal plan for $dateStr');
+      }
       try {
         final mealData = allMealPlans[dateStr] as Map<String, dynamic>;
         final result = <String, Map<String, dynamic>>{};
@@ -114,12 +119,16 @@ class StorageService {
 
         return result;
       } catch (e) {
-        print('[loadDailyMealPlan] Error parsing meal plan: $e');
+        if (kDebugMode) {
+          print('[loadDailyMealPlan] Error parsing meal plan: $e');
+        }
         return null;
       }
     }
 
-    print('[loadDailyMealPlan] No meal plan found for $dateStr');
+    if (kDebugMode) {
+      print('[loadDailyMealPlan] No meal plan found for $dateStr');
+    }
     return null;
   }
 
@@ -127,8 +136,7 @@ class StorageService {
   Future<void> deleteDailyMealPlan(DateTime date) async {
     final prefs = await SharedPreferences.getInstance();
     final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
-    final Map<String, dynamic> allMealPlans =
-        json.decode(mealsJson) as Map<String, dynamic>;
+    final allMealPlans = json.decode(mealsJson) as Map<String, dynamic>;
 
     // Convert DateTime to string in format yyyy-MM-dd for retrieval
     final dateStr = _formatDateForStorage(date);
@@ -137,7 +145,9 @@ class StorageService {
       allMealPlans.remove(dateStr);
       // Save the updated map back to shared preferences
       await prefs.setString(_dailyMealPlansKey, json.encode(allMealPlans));
-      print('[deleteDailyMealPlan] Deleted meal plan for $dateStr');
+      if (kDebugMode) {
+        print('[deleteDailyMealPlan] Deleted meal plan for $dateStr');
+      }
     }
   }
 
@@ -145,11 +155,10 @@ class StorageService {
   Future<List<DateTime>> getSavedMealPlanDates() async {
     final prefs = await SharedPreferences.getInstance();
     final mealsJson = prefs.getString(_dailyMealPlansKey) ?? '{}';
-    final Map<String, dynamic> allMealPlans =
-        json.decode(mealsJson) as Map<String, dynamic>;
+    final allMealPlans = json.decode(mealsJson) as Map<String, dynamic>;
 
     return allMealPlans.keys
-        .map((dateStr) => _parseDateFromStorage(dateStr))
+        .map(_parseDateFromStorage)
         .where((date) => date != null)
         .cast<DateTime>()
         .toList();
@@ -166,11 +175,16 @@ class StorageService {
       final parts = dateStr.split('-');
       if (parts.length == 3) {
         return DateTime(
-            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+          int.parse(parts[2]),
+        );
       }
       return null;
     } catch (e) {
-      print('[_parseDateFromStorage] Error parsing date: $e');
+      if (kDebugMode) {
+        print('[_parseDateFromStorage] Error parsing date: $e');
+      }
       return null;
     }
   }
@@ -192,11 +206,12 @@ class StorageService {
     }
 
     try {
-      final Map<String, dynamic> goalMap =
-          json.decode(goalJson) as Map<String, dynamic>;
+      final goalMap = json.decode(goalJson) as Map<String, dynamic>;
       return Goal.fromJson(goalMap);
     } catch (e) {
-      print('[loadActiveGoal] Error parsing goal: $e'); // Add function name
+      if (kDebugMode) {
+        print('[loadActiveGoal] Error parsing goal: $e');
+      } // Add function name
       return null;
     }
   }
@@ -224,12 +239,14 @@ class StorageService {
     }
 
     try {
-      final List<dynamic> goalsList = json.decode(goalsJson) as List<dynamic>;
+      final goalsList = json.decode(goalsJson) as List<dynamic>;
       return goalsList
           .map((goalMap) => Goal.fromJson(goalMap as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('[loadUserGoals] Error parsing goals: $e'); // Add function name
+      if (kDebugMode) {
+        print('[loadUserGoals] Error parsing goals: $e');
+      } // Add function name
       return [];
     }
   }

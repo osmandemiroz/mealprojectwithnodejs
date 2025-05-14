@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_instance_creation
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -60,7 +62,7 @@ class SettingsScreen extends StatelessWidget {
           child: TextButton(
             onPressed: () async {
               // Show confirmation dialog
-              final bool? confirm = await showDialog<bool>(
+              final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Sign Out'),
@@ -79,10 +81,11 @@ class SettingsScreen extends StatelessWidget {
               );
 
               // If confirmed, sign out and navigate to login
+              // ignore: use_if_null_to_convert_nulls_to_bools
               if (confirm == true) {
                 await authService.logout();
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
+                  await Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/login',
                     (route) => false,

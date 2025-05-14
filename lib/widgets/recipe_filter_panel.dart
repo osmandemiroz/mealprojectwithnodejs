@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -435,7 +437,7 @@ class _NumericFilterContent extends StatelessWidget {
                     onModeChanged(selection.first);
                   }
                 },
-                style: ButtonStyle(
+                style: const ButtonStyle(
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),

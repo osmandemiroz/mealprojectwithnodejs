@@ -1,8 +1,8 @@
+// ignore_for_file: inference_failure_on_instance_creation
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../constants/app_theme.dart';
-import '../../providers/app_state.dart';
 import '../goals/goal_screen.dart';
 import '../meal_plan/meal_plan_screen.dart';
 import '../recipes/recipes_screen.dart';
@@ -10,9 +10,8 @@ import '../settings/profile_screen.dart';
 import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final int initialTab;
-
   const HomeScreen({this.initialTab = 0, super.key});
+  final int initialTab;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

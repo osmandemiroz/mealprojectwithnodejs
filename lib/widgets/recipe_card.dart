@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, inference_failure_on_instance_creation
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -30,7 +32,7 @@ class _RecipeCardState extends State<RecipeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context, listen: false);
+    Provider.of<AppState>(context, listen: false);
 
     final card = Container(
       decoration: BoxDecoration(
@@ -145,7 +147,8 @@ class _RecipeCardState extends State<RecipeCard> {
                                       // Hide saving indicator after a short delay
                                       // to show feedback to the user
                                       await Future.delayed(
-                                          const Duration(milliseconds: 300));
+                                        const Duration(milliseconds: 300),
+                                      );
 
                                       if (mounted) {
                                         setState(() => _isSaving = false);

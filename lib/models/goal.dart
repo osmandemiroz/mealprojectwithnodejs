@@ -4,20 +4,6 @@ part 'goal.g.dart';
 
 @JsonSerializable()
 class Goal {
-  final String id;
-  final String goalType;
-  final DateTime startDate;
-  final DateTime endDate;
-  final int targetCalories;
-  final int targetProtein;
-  final int targetCarbs;
-  final int targetFat;
-  final String userId;
-  final double? desiredWeight;
-  final double? startWeight;
-  final int? numberOfMealsPerDay;
-  final String? activityStatusPerDay;
-
   Goal({
     required this.id,
     required this.goalType,
@@ -37,7 +23,7 @@ class Goal {
   /// Connect the generated [_$GoalFromJson] function to the `fromJson` factory.
   factory Goal.fromJson(Map<String, dynamic> json) {
     // Convert database field names to our model properties
-    Map<String, dynamic> normalizedJson = {
+    final normalizedJson = <String, dynamic>{
       'id': json['GID']?.toString() ?? '',
       'goalType': json['Goal_Type'] ?? '',
       'startDate': json['Start_Date'],
@@ -57,11 +43,24 @@ class Goal {
 
     return _$GoalFromJson(normalizedJson);
   }
+  final String id;
+  final String goalType;
+  final DateTime startDate;
+  final DateTime endDate;
+  final int targetCalories;
+  final int targetProtein;
+  final int targetCarbs;
+  final int targetFat;
+  final String userId;
+  final double? desiredWeight;
+  final double? startWeight;
+  final int? numberOfMealsPerDay;
+  final String? activityStatusPerDay;
 
   /// Connect the generated [_$GoalToJson] function to the `toJson` method.
   Map<String, dynamic> toJson() {
     // First get the standard JSON representation
-    final Map<String, dynamic> json = _$GoalToJson(this);
+    _$GoalToJson(this);
 
     // Then convert to server field names
     return {

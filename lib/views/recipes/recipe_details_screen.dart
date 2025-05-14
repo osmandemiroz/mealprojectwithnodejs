@@ -1,6 +1,7 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_positional_boolean_parameters, avoid_catches_without_on_clauses
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -109,8 +110,10 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                             await appState.toggleFavorite(widget.recipe.id);
 
                             // Hide indicator after a short delay
+                            // ignore: inference_failure_on_instance_creation
                             await Future.delayed(
-                                const Duration(milliseconds: 300));
+                              const Duration(milliseconds: 300),
+                            );
 
                             if (mounted) {
                               setState(() => _isSavingFavorite = false);
@@ -345,7 +348,10 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
 
   /// Creates a meal type selector for favorited recipes
   Widget _buildMealTypeSelector(
-      BuildContext context, Recipe currentRecipe, AppState appState) {
+    BuildContext context,
+    Recipe currentRecipe,
+    AppState appState,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -424,6 +430,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
     required BuildContext context,
     required MealType type,
     required MealType currentType,
+    // ignore: inference_failure_on_function_return_type
     required Function(bool) onSelected,
   }) {
     final isSelected = type == currentType;
@@ -469,7 +476,6 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
         border: Border.all(
           color: AppTheme.borderColor,
-          width: 1,
         ),
       ),
       child: Column(
@@ -524,9 +530,11 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
     // Capitalize first letter of each word
     return name
         .split('_')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1)}'
-            : '')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1)}'
+              : '',
+        )
         .join(' ');
   }
 
@@ -549,10 +557,10 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
   void _showAddToMealPlanDialog(BuildContext context, Recipe recipe) {
     // List of meal types to choose from
     final mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
-    bool _isAdding = false;
+    var isAdding = false;
 
     // Default selected meal type based on recipe's meal type
-    String selectedMealType = 'Lunch';
+    var selectedMealType = 'Lunch';
     if (recipe.mealType == MealType.breakfast) {
       selectedMealType = 'Breakfast';
     } else if (recipe.mealType == MealType.dinner) {
@@ -691,11 +699,11 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                     AppTheme.spacing16 + MediaQuery.of(context).padding.bottom,
                   ),
                   child: FilledButton(
-                    onPressed: _isAdding
+                    onPressed: isAdding
                         ? null
                         : () async {
                             setState(() {
-                              _isAdding = true;
+                              isAdding = true;
                             });
 
                             try {
@@ -730,7 +738,9 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
 
                               // Save the updated meal plan
                               await storageService.saveDailyMealPlan(
-                                  today, mealsByType);
+                                today,
+                                mealsByType,
+                              );
 
                               if (mounted) {
                                 // Close the dialog
@@ -752,14 +762,18 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                                 );
                               }
                             } catch (error) {
-                              print(
-                                  '[_showAddToMealPlanDialog] Error adding to meal plan: $error');
+                              if (kDebugMode) {
+                                print(
+                                  '[_showAddToMealPlanDialog] Error adding to meal plan: $error',
+                                );
+                              }
 
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Failed to add recipe to meal plan'),
+                                      'Failed to add recipe to meal plan',
+                                    ),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -769,7 +783,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                             } finally {
                               if (mounted) {
                                 setState(() {
-                                  _isAdding = false;
+                                  isAdding = false;
                                 });
                               }
                             }
@@ -785,7 +799,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                       disabledBackgroundColor:
                           AppTheme.primaryColor.withOpacity(0.6),
                     ),
-                    child: _isAdding
+                    child: isAdding
                         ? const SizedBox(
                             width: 24,
                             height: 24,
@@ -795,7 +809,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen> {
                             ),
                           )
                         : const Text(
-                            'Add to Today\'s Meal Plan',
+                            "Add to Today's Meal Plan",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,

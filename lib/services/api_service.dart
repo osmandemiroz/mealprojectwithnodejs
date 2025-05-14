@@ -422,7 +422,8 @@ class ApiService {
   Future<Progress> createProgressEntry(Progress progress) async {
     final response = await _client.post(
       Uri.parse(
-          '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress'),
+        '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(progress.toJson()),
     );
@@ -437,7 +438,8 @@ class ApiService {
   Future<Progress> updateProgressEntry(Progress progress) async {
     final response = await _client.put(
       Uri.parse(
-          '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress'),
+        '$baseUrl/users/${progress.userId}/goals/${progress.goalId}/progress',
+      ),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(progress.toJson()),
     );

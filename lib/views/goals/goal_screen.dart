@@ -1,3 +1,5 @@
+// ignore_for_file: inference_failure_on_function_return_type, avoid_positional_boolean_parameters, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -22,13 +24,7 @@ class _GoalScreenState extends State<GoalScreen> {
   void initState() {
     super.initState();
     // Load goals on screen init
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appState = context.read<AppState>();
-      appState.loadGoals();
-      appState.loadActiveGoals();
-      appState.loadCompletedGoals();
-      appState.loadProgressEntries();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
   @override
@@ -45,10 +41,11 @@ class _GoalScreenState extends State<GoalScreen> {
           return ErrorMessage(
             message: appState.error!,
             onRetry: () {
-              appState.loadGoals();
-              appState.loadActiveGoals();
-              appState.loadCompletedGoals();
-              appState.loadProgressEntries();
+              appState
+                ..loadGoals()
+                ..loadActiveGoals()
+                ..loadCompletedGoals()
+                ..loadProgressEntries();
             },
           );
         }
@@ -93,9 +90,11 @@ class _GoalScreenState extends State<GoalScreen> {
         return CustomScrollView(
           slivers: [
             // Only show Weekly Stats Summary if there's an active goal
-            if (appState.goals.any((goal) =>
-                goal.endDate.isAfter(DateTime.now()) &&
-                goal.startDate.isBefore(DateTime.now())))
+            if (appState.goals.any(
+              (goal) =>
+                  goal.endDate.isAfter(DateTime.now()) &&
+                  goal.startDate.isBefore(DateTime.now()),
+            ))
               SliverToBoxAdapter(
                 child: _WeeklyStatsSummary(
                   goals: appState.goals,
@@ -164,9 +163,11 @@ class _GoalScreenState extends State<GoalScreen> {
   void _showAddGoalDialog(BuildContext context) {
     // Check if there's already a goal
     final appState = context.read<AppState>();
-    final hasActiveGoal = appState.goals.any((goal) =>
-        goal.endDate.isAfter(DateTime.now()) &&
-        goal.startDate.isBefore(DateTime.now()));
+    final hasActiveGoal = appState.goals.any(
+      (goal) =>
+          goal.endDate.isAfter(DateTime.now()) &&
+          goal.startDate.isBefore(DateTime.now()),
+    );
 
     if (hasActiveGoal) {
       // Show a message that only one active goal is allowed
@@ -183,41 +184,40 @@ class _GoalScreenState extends State<GoalScreen> {
 
   void _showCreateGoalModal(BuildContext context) {
     // Initialize variables for the modal
-    String goalType = 'Weight Loss';
+    var goalType = 'Weight Loss';
     DateTime? startDate;
     DateTime? endDate;
-    String activityStatusPerDay = 'Moderate';
-    int numberOfMealsPerDay = 3;
-    int targetCalories = 2000;
-    int targetProtein = 120;
-    int targetCarbs = 200;
-    int targetFat = 65;
+    var activityStatusPerDay = 'Moderate';
+    var numberOfMealsPerDay = 3;
+    var targetCalories = 2000;
+    var targetProtein = 120;
+    var targetCarbs = 200;
+    var targetFat = 65;
 
     // Text controllers
-    final TextEditingController startDateController = TextEditingController();
-    final TextEditingController endDateController = TextEditingController();
-    final TextEditingController startWeightController = TextEditingController();
-    final TextEditingController desiredWeightController =
-        TextEditingController();
+    final startDateController = TextEditingController();
+    final endDateController = TextEditingController();
+    final startWeightController = TextEditingController();
+    final desiredWeightController = TextEditingController();
 
     // Form key
     final formKey = GlobalKey<FormState>();
 
     // Define activity status options
-    final List<String> activityOptions = [
+    final activityOptions = <String>[
       'Sedentary',
       'Light',
       'Moderate',
       'Active',
-      'Very Active'
+      'Very Active',
     ];
 
     // Define goal type options
-    final List<String> goalTypeOptions = [
+    final goalTypeOptions = <String>[
       'Weight Loss',
       'Weight Gain',
       'Muscle Building',
-      'Maintenance'
+      'Maintenance',
     ];
 
     // Show full-screen bottom sheet for better UX
@@ -226,287 +226,153 @@ class _GoalScreenState extends State<GoalScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setModalState) {
-          // Custom select date function that uses the modal's setState
-          Future<void> _selectDate(
-              BuildContext context, bool isStartDate) async {
-            final initialDate = isStartDate
-                ? DateTime.now()
-                : (startDate?.add(const Duration(days: 30)) ??
-                    DateTime.now().add(const Duration(days: 30)));
-            final firstDate = isStartDate
-                ? DateTime.now().subtract(const Duration(days: 1))
-                : (startDate ?? DateTime.now());
-            final lastDate = isStartDate
-                ? DateTime.now().add(const Duration(days: 365))
-                : DateTime.now().add(const Duration(days: 730));
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // Custom select date function that uses the modal's setState
+            Future<void> selectDate(
+              BuildContext context,
+              bool isStartDate,
+            ) async {
+              final initialDate = isStartDate
+                  ? DateTime.now()
+                  : (startDate?.add(const Duration(days: 30)) ??
+                      DateTime.now().add(const Duration(days: 30)));
+              final firstDate = isStartDate
+                  ? DateTime.now().subtract(const Duration(days: 1))
+                  : (startDate ?? DateTime.now());
+              final lastDate = isStartDate
+                  ? DateTime.now().add(const Duration(days: 365))
+                  : DateTime.now().add(const Duration(days: 730));
 
-            final pickedDate = await showDatePicker(
-              context: context,
-              initialDate: initialDate,
-              firstDate: firstDate,
-              lastDate: lastDate,
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.light(
-                      primary: AppTheme.primaryColor,
-                      onPrimary: Colors.white,
-                      surface: Colors.white,
-                      onSurface: AppTheme.textPrimaryColor,
+              final pickedDate = await showDatePicker(
+                context: context,
+                initialDate: initialDate,
+                firstDate: firstDate,
+                lastDate: lastDate,
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: AppTheme.primaryColor,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+
+              if (pickedDate != null) {
+                setModalState(() {
+                  if (isStartDate) {
+                    startDate = pickedDate;
+                    startDateController.text =
+                        DateFormat('MMM d, yyyy').format(pickedDate);
+                  } else {
+                    endDate = pickedDate;
+                    endDateController.text =
+                        DateFormat('MMM d, yyyy').format(pickedDate);
+                  }
+                });
+              }
+            }
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.9,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle and title
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Create New Goal',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: child!,
-                );
-              },
-            );
 
-            if (pickedDate != null) {
-              setModalState(() {
-                if (isStartDate) {
-                  startDate = pickedDate;
-                  startDateController.text =
-                      DateFormat('MMM d, yyyy').format(pickedDate);
-                } else {
-                  endDate = pickedDate;
-                  endDateController.text =
-                      DateFormat('MMM d, yyyy').format(pickedDate);
-                }
-              });
-            }
-          }
-
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.9,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Handle and title
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Column(
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Create New Goal',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Form content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Goal Type Section
-                          const Text(
-                            'Goal Type',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 16),
-                                isCollapsed: false,
-                              ),
-                              value: goalType,
-                              icon: const Icon(Icons.keyboard_arrow_down),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black,
-                              ),
-                              items: goalTypeOptions.map((String type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Text(type),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setModalState(() {
-                                    goalType = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Date Section
-                          const Text(
-                            'Duration',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              // Start Date
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    await _selectDate(context, true);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Start Date',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                startDateController.text.isEmpty
-                                                    ? 'Select date'
-                                                    : startDateController.text,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: startDateController
-                                                          .text.isEmpty
-                                                      ? Colors.grey
-                                                      : Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                            const Icon(Icons.calendar_today,
-                                                size: 16, color: Colors.grey),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // End Date
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    await _selectDate(context, false);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'End Date',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                endDateController.text.isEmpty
-                                                    ? 'Select date'
-                                                    : endDateController.text,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: endDateController
-                                                          .text.isEmpty
-                                                      ? Colors.grey
-                                                      : Colors.black,
-                                                ),
-                                              ),
-                                            ),
-                                            const Icon(Icons.calendar_today,
-                                                size: 16, color: Colors.grey),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (startDate != null &&
-                              endDate != null &&
-                              !endDate!.isAfter(startDate!))
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                'End date must be after start date',
-                                style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 24),
-
-                          // Weight Information (conditional)
-                          if (goalType == 'Weight Loss' ||
-                              goalType == 'Weight Gain') ...[
+                  // Form content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Goal Type Section
                             const Text(
-                              'Weight Goals',
+                              'Goal Type',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding:
+                                      EdgeInsets.symmetric(horizontal: 16),
+                                  isCollapsed: false,
+                                ),
+                                value: goalType,
+                                icon: const Icon(Icons.keyboard_arrow_down),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                                items: goalTypeOptions.map((String type) {
+                                  return DropdownMenuItem<String>(
+                                    value: type,
+                                    child: Text(type),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setModalState(() {
+                                      goalType = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Date Section
+                            const Text(
+                              'Duration',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -516,363 +382,530 @@ class _GoalScreenState extends State<GoalScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                // Current Weight
+                                // Start Date
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: TextFormField(
-                                      controller: startWeightController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                              decimal: true),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Current Weight',
-                                        floatingLabelBehavior:
-                                            FloatingLabelBehavior.auto,
-                                        suffixText: 'kg',
-                                        contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 12),
-                                        border: InputBorder.none,
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      await selectDate(context, true);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 16,
                                       ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Required';
-                                        }
-                                        if (double.tryParse(value) == null) {
-                                          return 'Invalid number';
-                                        }
-                                        return null;
-                                      },
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Start Date',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  startDateController
+                                                          .text.isEmpty
+                                                      ? 'Select date'
+                                                      : startDateController
+                                                          .text,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: startDateController
+                                                            .text.isEmpty
+                                                        ? Colors.grey
+                                                        : Colors.black,
+                                                  ),
+                                                ),
+                                              ),
+                                              const Icon(
+                                                Icons.calendar_today,
+                                                size: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                // Target Weight
+                                // End Date
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: TextFormField(
-                                      controller: desiredWeightController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                              decimal: true),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Target Weight',
-                                        floatingLabelBehavior:
-                                            FloatingLabelBehavior.auto,
-                                        suffixText: 'kg',
-                                        contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 12),
-                                        border: InputBorder.none,
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      await selectDate(context, false);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 16,
                                       ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Required';
-                                        }
-                                        if (double.tryParse(value) == null) {
-                                          return 'Invalid number';
-                                        }
-                                        return null;
-                                      },
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'End Date',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  endDateController.text.isEmpty
+                                                      ? 'Select date'
+                                                      : endDateController.text,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: endDateController
+                                                            .text.isEmpty
+                                                        ? Colors.grey
+                                                        : Colors.black,
+                                                  ),
+                                                ),
+                                              ),
+                                              const Icon(
+                                                Icons.calendar_today,
+                                                size: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
+                            if (startDate != null &&
+                                endDate != null &&
+                                !endDate!.isAfter(startDate!))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'End date must be after start date',
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
                             const SizedBox(height: 24),
+
+                            // Weight Information (conditional)
+                            if (goalType == 'Weight Loss' ||
+                                goalType == 'Weight Gain') ...[
+                              const Text(
+                                'Weight Goals',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  // Current Weight
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: TextFormField(
+                                        controller: startWeightController,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Current Weight',
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.auto,
+                                          suffixText: 'kg',
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          border: InputBorder.none,
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Required';
+                                          }
+                                          if (double.tryParse(value) == null) {
+                                            return 'Invalid number';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  // Target Weight
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: TextFormField(
+                                        controller: desiredWeightController,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Target Weight',
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.auto,
+                                          suffixText: 'kg',
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          border: InputBorder.none,
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Required';
+                                          }
+                                          if (double.tryParse(value) == null) {
+                                            return 'Invalid number';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+
+                            // Activity Level
+                            const Text(
+                              'Activity Level',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding:
+                                      EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                                value: activityStatusPerDay,
+                                icon: const Icon(Icons.keyboard_arrow_down),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                                items: activityOptions.map((String activity) {
+                                  return DropdownMenuItem<String>(
+                                    value: activity,
+                                    child: Text(activity),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setModalState(() {
+                                      activityStatusPerDay = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Meals Per Day
+                            const Text(
+                              'Meals Per Day',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonFormField<int>(
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding:
+                                      EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                                value: numberOfMealsPerDay,
+                                icon: const Icon(Icons.keyboard_arrow_down),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                                items: [3, 4, 5, 6].map((int number) {
+                                  return DropdownMenuItem<int>(
+                                    value: number,
+                                    child: Text(number.toString()),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setModalState(() {
+                                      numberOfMealsPerDay = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Nutrition Goals Section
+                            const Text(
+                              'Daily Nutrition Goals',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Calories
+                            _NutritionSliderCard(
+                              icon: Icons.local_fire_department,
+                              iconColor: Colors.orange,
+                              title: 'Calories',
+                              value: targetCalories.toDouble(),
+                              min: 1200,
+                              max: 3000,
+                              unit: 'kcal',
+                              onChanged: (value) {
+                                setModalState(() {
+                                  targetCalories = value.round();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Protein
+                            _NutritionSliderCard(
+                              icon: Icons.fitness_center,
+                              iconColor: Colors.blue,
+                              title: 'Protein',
+                              value: targetProtein.toDouble(),
+                              min: 50,
+                              max: 250,
+                              unit: 'g',
+                              onChanged: (value) {
+                                setModalState(() {
+                                  targetProtein = value.round();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Carbs
+                            _NutritionSliderCard(
+                              icon: Icons.grain,
+                              iconColor: Colors.amber,
+                              title: 'Carbohydrates',
+                              value: targetCarbs.toDouble(),
+                              min: 50,
+                              max: 400,
+                              unit: 'g',
+                              onChanged: (value) {
+                                setModalState(() {
+                                  targetCarbs = value.round();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Fat
+                            _NutritionSliderCard(
+                              icon: Icons.opacity,
+                              iconColor: Colors.deepPurple,
+                              title: 'Fat',
+                              value: targetFat.toDouble(),
+                              min: 20,
+                              max: 150,
+                              unit: 'g',
+                              onChanged: (value) {
+                                setModalState(() {
+                                  targetFat = value.round();
+                                });
+                              },
+                            ),
                           ],
-
-                          // Activity Level
-                          const Text(
-                            'Activity Level',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 16),
-                              ),
-                              value: activityStatusPerDay,
-                              icon: const Icon(Icons.keyboard_arrow_down),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black,
-                              ),
-                              items: activityOptions.map((String activity) {
-                                return DropdownMenuItem<String>(
-                                  value: activity,
-                                  child: Text(activity),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setModalState(() {
-                                    activityStatusPerDay = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Meals Per Day
-                          const Text(
-                            'Meals Per Day',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonFormField<int>(
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 16),
-                              ),
-                              value: numberOfMealsPerDay,
-                              icon: const Icon(Icons.keyboard_arrow_down),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black,
-                              ),
-                              items: [3, 4, 5, 6].map((int number) {
-                                return DropdownMenuItem<int>(
-                                  value: number,
-                                  child: Text(number.toString()),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setModalState(() {
-                                    numberOfMealsPerDay = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Nutrition Goals Section
-                          const Text(
-                            'Daily Nutrition Goals',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Calories
-                          _NutritionSliderCard(
-                            icon: Icons.local_fire_department,
-                            iconColor: Colors.orange,
-                            title: 'Calories',
-                            value: targetCalories.toDouble(),
-                            min: 1200.0,
-                            max: 3000.0,
-                            unit: 'kcal',
-                            onChanged: (value) {
-                              setModalState(() {
-                                targetCalories = value.round();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Protein
-                          _NutritionSliderCard(
-                            icon: Icons.fitness_center,
-                            iconColor: Colors.blue,
-                            title: 'Protein',
-                            value: targetProtein.toDouble(),
-                            min: 50.0,
-                            max: 250.0,
-                            unit: 'g',
-                            onChanged: (value) {
-                              setModalState(() {
-                                targetProtein = value.round();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Carbs
-                          _NutritionSliderCard(
-                            icon: Icons.grain,
-                            iconColor: Colors.amber,
-                            title: 'Carbohydrates',
-                            value: targetCarbs.toDouble(),
-                            min: 50.0,
-                            max: 400.0,
-                            unit: 'g',
-                            onChanged: (value) {
-                              setModalState(() {
-                                targetCarbs = value.round();
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Fat
-                          _NutritionSliderCard(
-                            icon: Icons.opacity,
-                            iconColor: Colors.deepPurple,
-                            title: 'Fat',
-                            value: targetFat.toDouble(),
-                            min: 20.0,
-                            max: 150.0,
-                            unit: 'g',
-                            onChanged: (value) {
-                              setModalState(() {
-                                targetFat = value.round();
-                              });
-                            },
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // Bottom action buttons
-                Container(
-                  padding: EdgeInsets.fromLTRB(
-                      24, 16, 24, 16 + MediaQuery.of(context).padding.bottom),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey.shade700,
-                            minimumSize: const Size(double.infinity, 50),
+                  // Bottom action buttons
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      16,
+                      24,
+                      16 + MediaQuery.of(context).padding.bottom,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade700,
+                              minimumSize: const Size(double.infinity, 50),
+                            ),
+                            child: const Text('Cancel'),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton(
-                          onPressed: () {
-                            // Validate form
-                            if (formKey.currentState?.validate() ?? false) {
-                              // Validate dates
-                              if (startDate == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton(
+                            onPressed: () {
+                              // Validate form
+                              if (formKey.currentState?.validate() ?? false) {
+                                // Validate dates
+                                if (startDate == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
                                       content:
-                                          Text('Please select a start date')),
-                                );
-                                return;
-                              }
-                              if (endDate == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                          Text('Please select a start date'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (endDate == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
                                       content:
-                                          Text('Please select an end date')),
-                                );
-                                return;
-                              }
-                              if (endDate!.isBefore(startDate!)) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                          Text('Please select an end date'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (endDate!.isBefore(startDate!)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
                                       content: Text(
-                                          'End date must be after start date')),
+                                        'End date must be after start date',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // Create goal object
+                                final newGoal = Goal(
+                                  id: '', // API will assign an ID
+                                  goalType: goalType,
+                                  startDate: startDate!,
+                                  endDate: endDate!,
+                                  targetCalories: targetCalories,
+                                  targetProtein: targetProtein,
+                                  targetCarbs: targetCarbs,
+                                  targetFat: targetFat,
+                                  userId:
+                                      '1', // Use current user ID - would come from auth
+                                  startWeight: startWeightController
+                                          .text.isNotEmpty
+                                      ? double.parse(startWeightController.text)
+                                      : null,
+                                  desiredWeight:
+                                      desiredWeightController.text.isNotEmpty
+                                          ? double.parse(
+                                              desiredWeightController.text,
+                                            )
+                                          : null,
+                                  numberOfMealsPerDay: numberOfMealsPerDay,
+                                  activityStatusPerDay: activityStatusPerDay,
                                 );
-                                return;
+
+                                // Add goal using provider
+                                context.read<AppState>().addGoal(newGoal);
+
+                                // Close dialog
+                                Navigator.pop(context);
                               }
-
-                              // Create goal object
-                              final newGoal = Goal(
-                                id: '', // API will assign an ID
-                                goalType: goalType,
-                                startDate: startDate!,
-                                endDate: endDate!,
-                                targetCalories: targetCalories,
-                                targetProtein: targetProtein,
-                                targetCarbs: targetCarbs,
-                                targetFat: targetFat,
-                                userId:
-                                    '1', // Use current user ID - would come from auth
-                                startWeight: startWeightController
-                                        .text.isNotEmpty
-                                    ? double.parse(startWeightController.text)
-                                    : null,
-                                desiredWeight: desiredWeightController
-                                        .text.isNotEmpty
-                                    ? double.parse(desiredWeightController.text)
-                                    : null,
-                                numberOfMealsPerDay: numberOfMealsPerDay,
-                                activityStatusPerDay: activityStatusPerDay,
-                              );
-
-                              // Add goal using provider
-                              context.read<AppState>().addGoal(newGoal);
-
-                              // Close dialog
-                              Navigator.pop(context);
-                            }
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          ),
-                          child: const Text(
-                            'Create Goal',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                            child: const Text(
+                              'Create Goal',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        });
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -891,7 +924,7 @@ class _WeeklyStatsSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     // Find the active goal
     final now = DateTime.now();
-    Goal? activeGoal = goals.isNotEmpty
+    final activeGoal = goals.isNotEmpty
         ? goals.firstWhere(
             (goal) => goal.endDate.isAfter(now) && goal.startDate.isBefore(now),
             orElse: () => goals.first,
@@ -1100,14 +1133,12 @@ class _NutritionStatItem extends StatelessWidget {
 }
 
 class _GoalCard extends StatelessWidget {
-  final Goal goal;
-  final Progress? progress;
-
   const _GoalCard({
-    Key? key,
     required this.goal,
     this.progress,
-  }) : super(key: key);
+  });
+  final Goal goal;
+  final Progress? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -1312,7 +1343,8 @@ class _GoalCard extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('Delete Goal'),
         content: const Text(
-            'Are you sure you want to delete this goal? This cannot be undone.'),
+          'Are you sure you want to delete this goal? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1347,49 +1379,53 @@ class _GoalCard extends StatelessWidget {
 // Method to show the edit goal dialog with pre-filled data
 void _showEditGoalDialog(BuildContext context, Goal goal) {
   final formKey = GlobalKey<FormState>();
-  final TextEditingController startDateController = TextEditingController(
-      text: DateFormat('MMM d, yyyy').format(goal.startDate));
-  final TextEditingController endDateController = TextEditingController(
-      text: DateFormat('MMM d, yyyy').format(goal.endDate));
-  final TextEditingController startWeightController = TextEditingController(
-      text: goal.startWeight != null && goal.startWeight! > 0
-          ? goal.startWeight.toString()
-          : '');
-  final TextEditingController desiredWeightController = TextEditingController(
-      text: goal.desiredWeight != null && goal.desiredWeight! > 0
-          ? goal.desiredWeight.toString()
-          : '');
+  final startDateController = TextEditingController(
+    text: DateFormat('MMM d, yyyy').format(goal.startDate),
+  );
+  final endDateController = TextEditingController(
+    text: DateFormat('MMM d, yyyy').format(goal.endDate),
+  );
+  final startWeightController = TextEditingController(
+    text: goal.startWeight != null && goal.startWeight! > 0
+        ? goal.startWeight.toString()
+        : '',
+  );
+  final desiredWeightController = TextEditingController(
+    text: goal.desiredWeight != null && goal.desiredWeight! > 0
+        ? goal.desiredWeight.toString()
+        : '',
+  );
 
   // Initialize with goal values
-  DateTime startDate = goal.startDate;
-  DateTime endDate = goal.endDate;
-  String goalType = goal.goalType;
-  String activityStatusPerDay = goal.activityStatusPerDay ?? 'Moderate';
-  int numberOfMealsPerDay = goal.numberOfMealsPerDay ?? 3;
-  int targetCalories = goal.targetCalories;
-  int targetProtein = goal.targetProtein;
-  int targetCarbs = goal.targetCarbs;
-  int targetFat = goal.targetFat;
+  var startDate = goal.startDate;
+  var endDate = goal.endDate;
+  var goalType = goal.goalType;
+  var activityStatusPerDay = goal.activityStatusPerDay ?? 'Moderate';
+  var numberOfMealsPerDay = goal.numberOfMealsPerDay ?? 3;
+  var targetCalories = goal.targetCalories;
+  var targetProtein = goal.targetProtein;
+  var targetCarbs = goal.targetCarbs;
+  var targetFat = goal.targetFat;
 
   // Define activity status options
-  final List<String> activityOptions = [
+  final activityOptions = <String>[
     'Sedentary',
     'Light',
     'Moderate',
     'Active',
-    'Very Active'
+    'Very Active',
   ];
 
   // Define goal type options
-  final List<String> goalTypeOptions = [
+  final goalTypeOptions = <String>[
     'Weight Loss',
     'Weight Gain',
     'Muscle Building',
-    'Maintenance'
+    'Maintenance',
   ];
 
   // Show date picker for edit goal screen
-  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+  Future<void> selectDate(BuildContext context, bool isStartDate) async {
     final initialDate = isStartDate ? startDate : endDate;
     final firstDate = isStartDate
         ? DateTime.now().subtract(const Duration(days: 1))
@@ -1406,11 +1442,8 @@ void _showEditGoalDialog(BuildContext context, Goal goal) {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppTheme.primaryColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.textPrimaryColor,
             ),
           ),
           child: child!,
@@ -1435,236 +1468,105 @@ void _showEditGoalDialog(BuildContext context, Goal goal) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (BuildContext context) {
-      return StatefulBuilder(builder: (context, setEditState) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.9,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Handle and title
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Edit Goal',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+      return StatefulBuilder(
+        builder: (context, setEditState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.9,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-
-              // Form content - same as add goal form but pre-filled
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Goal Type Section
-                        const Text(
-                          'Goal Type',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle and title
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                              isCollapsed: false,
-                            ),
-                            value: goalType,
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
-                            ),
-                            items: goalTypeOptions.map((String type) {
-                              return DropdownMenuItem<String>(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setEditState(() {
-                                  goalType = value;
-                                });
-                              }
-                            },
+                            color: Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Edit Goal',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                        // Date Section
-                        const Text(
-                          'Duration',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            // Start Date
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  await _selectDate(context, true);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Start Date',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              startDateController.text.isEmpty
-                                                  ? 'Select date'
-                                                  : startDateController.text,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: startDateController
-                                                        .text.isEmpty
-                                                    ? Colors.grey
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                          const Icon(Icons.calendar_today,
-                                              size: 16, color: Colors.grey),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // End Date
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () async {
-                                  await _selectDate(context, false);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'End Date',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              endDateController.text.isEmpty
-                                                  ? 'Select date'
-                                                  : endDateController.text,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: endDateController
-                                                        .text.isEmpty
-                                                    ? Colors.grey
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                          const Icon(Icons.calendar_today,
-                                              size: 16, color: Colors.grey),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!endDate.isAfter(startDate))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              'End date must be after start date',
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 24),
-
-                        // Weight Information (conditional)
-                        if (goalType == 'Weight Loss' ||
-                            goalType == 'Weight Gain') ...[
+                // Form content - same as add goal form but pre-filled
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Goal Type Section
                           const Text(
-                            'Weight Goals',
+                            'Goal Type',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding:
+                                    EdgeInsets.symmetric(horizontal: 16),
+                                isCollapsed: false,
+                              ),
+                              value: goalType,
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              items: goalTypeOptions.map((String type) {
+                                return DropdownMenuItem<String>(
+                                  value: type,
+                                  child: Text(type),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setEditState(() {
+                                    goalType = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Date Section
+                          const Text(
+                            'Duration',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -1674,361 +1576,520 @@ void _showEditGoalDialog(BuildContext context, Goal goal) {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              // Current Weight
+                              // Start Date
                               Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: TextFormField(
-                                    controller: startWeightController,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    decoration: const InputDecoration(
-                                      labelText: 'Current Weight',
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.auto,
-                                      suffixText: 'kg',
-                                      contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 12),
-                                      border: InputBorder.none,
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    await selectDate(context, true);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                      horizontal: 16,
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Required';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Invalid number';
-                                      }
-                                      return null;
-                                    },
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Start Date',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                startDateController.text.isEmpty
+                                                    ? 'Select date'
+                                                    : startDateController.text,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: startDateController
+                                                          .text.isEmpty
+                                                      ? Colors.grey
+                                                      : Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.calendar_today,
+                                              size: 16,
+                                              color: Colors.grey,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // Target Weight
+                              // End Date
                               Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.grey.shade300),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: TextFormField(
-                                    controller: desiredWeightController,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    decoration: const InputDecoration(
-                                      labelText: 'Target Weight',
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.auto,
-                                      suffixText: 'kg',
-                                      contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 12),
-                                      border: InputBorder.none,
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    await selectDate(context, false);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                      horizontal: 16,
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Required';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Invalid number';
-                                      }
-                                      return null;
-                                    },
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'End Date',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                endDateController.text.isEmpty
+                                                    ? 'Select date'
+                                                    : endDateController.text,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: endDateController
+                                                          .text.isEmpty
+                                                      ? Colors.grey
+                                                      : Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.calendar_today,
+                                              size: 16,
+                                              color: Colors.grey,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
+                          if (!endDate.isAfter(startDate))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'End date must be after start date',
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 24),
+
+                          // Weight Information (conditional)
+                          if (goalType == 'Weight Loss' ||
+                              goalType == 'Weight Gain') ...[
+                            const Text(
+                              'Weight Goals',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                // Current Weight
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: TextFormField(
+                                      controller: startWeightController,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Current Weight',
+                                        floatingLabelBehavior:
+                                            FloatingLabelBehavior.auto,
+                                        suffixText: 'kg',
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        border: InputBorder.none,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required';
+                                        }
+                                        if (double.tryParse(value) == null) {
+                                          return 'Invalid number';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Target Weight
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: TextFormField(
+                                      controller: desiredWeightController,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Target Weight',
+                                        floatingLabelBehavior:
+                                            FloatingLabelBehavior.auto,
+                                        suffixText: 'kg',
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        border: InputBorder.none,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Required';
+                                        }
+                                        if (double.tryParse(value) == null) {
+                                          return 'Invalid number';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Activity Level
+                          const Text(
+                            'Activity Level',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding:
+                                    EdgeInsets.symmetric(horizontal: 16),
+                              ),
+                              value: activityStatusPerDay,
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              items: activityOptions.map((String activity) {
+                                return DropdownMenuItem<String>(
+                                  value: activity,
+                                  child: Text(activity),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setEditState(() {
+                                    activityStatusPerDay = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Meals Per Day
+                          const Text(
+                            'Meals Per Day',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonFormField<int>(
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                contentPadding:
+                                    EdgeInsets.symmetric(horizontal: 16),
+                              ),
+                              value: numberOfMealsPerDay,
+                              icon: const Icon(Icons.keyboard_arrow_down),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              items: [3, 4, 5, 6].map((int number) {
+                                return DropdownMenuItem<int>(
+                                  value: number,
+                                  child: Text(number.toString()),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setEditState(() {
+                                    numberOfMealsPerDay = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Nutrition Goals Section
+                          const Text(
+                            'Daily Nutrition Goals',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Calories
+                          _NutritionSliderCard(
+                            icon: Icons.local_fire_department,
+                            iconColor: Colors.orange,
+                            title: 'Calories',
+                            value: targetCalories.toDouble(),
+                            min: 1200,
+                            max: 3000,
+                            unit: 'kcal',
+                            onChanged: (value) {
+                              setEditState(() {
+                                targetCalories = value.round();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Protein
+                          _NutritionSliderCard(
+                            icon: Icons.fitness_center,
+                            iconColor: Colors.blue,
+                            title: 'Protein',
+                            value: targetProtein.toDouble(),
+                            min: 50,
+                            max: 250,
+                            unit: 'g',
+                            onChanged: (value) {
+                              setEditState(() {
+                                targetProtein = value.round();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Carbs
+                          _NutritionSliderCard(
+                            icon: Icons.grain,
+                            iconColor: Colors.amber,
+                            title: 'Carbohydrates',
+                            value: targetCarbs.toDouble(),
+                            min: 50,
+                            max: 400,
+                            unit: 'g',
+                            onChanged: (value) {
+                              setEditState(() {
+                                targetCarbs = value.round();
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Fat
+                          _NutritionSliderCard(
+                            icon: Icons.opacity,
+                            iconColor: Colors.deepPurple,
+                            title: 'Fat',
+                            value: targetFat.toDouble(),
+                            min: 20,
+                            max: 150,
+                            unit: 'g',
+                            onChanged: (value) {
+                              setEditState(() {
+                                targetFat = value.round();
+                              });
+                            },
+                          ),
                         ],
-
-                        // Activity Level
-                        const Text(
-                          'Activity Level',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                            ),
-                            value: activityStatusPerDay,
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
-                            ),
-                            items: activityOptions.map((String activity) {
-                              return DropdownMenuItem<String>(
-                                value: activity,
-                                child: Text(activity),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setEditState(() {
-                                  activityStatusPerDay = value;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Meals Per Day
-                        const Text(
-                          'Meals Per Day',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                            ),
-                            value: numberOfMealsPerDay,
-                            icon: const Icon(Icons.keyboard_arrow_down),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
-                            ),
-                            items: [3, 4, 5, 6].map((int number) {
-                              return DropdownMenuItem<int>(
-                                value: number,
-                                child: Text(number.toString()),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setEditState(() {
-                                  numberOfMealsPerDay = value;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Nutrition Goals Section
-                        const Text(
-                          'Daily Nutrition Goals',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Calories
-                        _NutritionSliderCard(
-                          icon: Icons.local_fire_department,
-                          iconColor: Colors.orange,
-                          title: 'Calories',
-                          value: targetCalories.toDouble(),
-                          min: 1200.0,
-                          max: 3000.0,
-                          unit: 'kcal',
-                          onChanged: (value) {
-                            setEditState(() {
-                              targetCalories = value.round();
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Protein
-                        _NutritionSliderCard(
-                          icon: Icons.fitness_center,
-                          iconColor: Colors.blue,
-                          title: 'Protein',
-                          value: targetProtein.toDouble(),
-                          min: 50.0,
-                          max: 250.0,
-                          unit: 'g',
-                          onChanged: (value) {
-                            setEditState(() {
-                              targetProtein = value.round();
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Carbs
-                        _NutritionSliderCard(
-                          icon: Icons.grain,
-                          iconColor: Colors.amber,
-                          title: 'Carbohydrates',
-                          value: targetCarbs.toDouble(),
-                          min: 50.0,
-                          max: 400.0,
-                          unit: 'g',
-                          onChanged: (value) {
-                            setEditState(() {
-                              targetCarbs = value.round();
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Fat
-                        _NutritionSliderCard(
-                          icon: Icons.opacity,
-                          iconColor: Colors.deepPurple,
-                          title: 'Fat',
-                          value: targetFat.toDouble(),
-                          min: 20.0,
-                          max: 150.0,
-                          unit: 'g',
-                          onChanged: (value) {
-                            setEditState(() {
-                              targetFat = value.round();
-                            });
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Bottom action buttons
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                    24, 16, 24, 16 + MediaQuery.of(context).padding.bottom),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.grey.shade700,
-                          minimumSize: const Size(double.infinity, 50),
+                // Bottom action buttons
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    16,
+                    24,
+                    16 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                          child: const Text('Cancel'),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: FilledButton(
-                        onPressed: () {
-                          // Validate form
-                          if (formKey.currentState?.validate() ?? false) {
-                            // Validate dates
-                            if (!endDate.isAfter(startDate)) {
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: () {
+                            // Validate form
+                            if (formKey.currentState?.validate() ?? false) {
+                              // Validate dates
+                              if (!endDate.isAfter(startDate)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'End date must be after start date',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // Get updated values for weight fields
+                              double? startWeight;
+                              double? desiredWeight;
+
+                              if (startWeightController.text.isNotEmpty) {
+                                startWeight =
+                                    double.parse(startWeightController.text);
+                              }
+
+                              if (desiredWeightController.text.isNotEmpty) {
+                                desiredWeight =
+                                    double.parse(desiredWeightController.text);
+                              }
+
+                              // Create goal object with updates
+                              final updatedGoal = Goal(
+                                id: goal.id, // Keep the same ID
+                                goalType: goalType,
+                                startDate: startDate,
+                                endDate: endDate,
+                                targetCalories: targetCalories,
+                                targetProtein: targetProtein,
+                                targetCarbs: targetCarbs,
+                                targetFat: targetFat,
+                                userId: goal.userId, // Keep the same user ID
+                                startWeight: startWeight,
+                                desiredWeight: desiredWeight,
+                                numberOfMealsPerDay: numberOfMealsPerDay,
+                                activityStatusPerDay: activityStatusPerDay,
+                              );
+
+                              // Update goal using provider
+                              context.read<AppState>().updateGoal(updatedGoal);
+
+                              // Show success message
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text(
-                                        'End date must be after start date')),
+                                  content: Text('Goal updated successfully'),
+                                ),
                               );
-                              return;
+
+                              // Close dialog
+                              Navigator.pop(context);
                             }
-
-                            // Get updated values for weight fields
-                            double? startWeight;
-                            double? desiredWeight;
-
-                            if (startWeightController.text.isNotEmpty) {
-                              startWeight =
-                                  double.parse(startWeightController.text);
-                            }
-
-                            if (desiredWeightController.text.isNotEmpty) {
-                              desiredWeight =
-                                  double.parse(desiredWeightController.text);
-                            }
-
-                            // Create goal object with updates
-                            final updatedGoal = Goal(
-                              id: goal.id, // Keep the same ID
-                              goalType: goalType,
-                              startDate: startDate,
-                              endDate: endDate,
-                              targetCalories: targetCalories,
-                              targetProtein: targetProtein,
-                              targetCarbs: targetCarbs,
-                              targetFat: targetFat,
-                              userId: goal.userId, // Keep the same user ID
-                              startWeight: startWeight,
-                              desiredWeight: desiredWeight,
-                              numberOfMealsPerDay: numberOfMealsPerDay,
-                              activityStatusPerDay: activityStatusPerDay,
-                            );
-
-                            // Update goal using provider
-                            context.read<AppState>().updateGoal(updatedGoal);
-
-                            // Show success message
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Goal updated successfully'),
-                              ),
-                            );
-
-                            // Close dialog
-                            Navigator.pop(context);
-                          }
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Update Goal',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                          child: const Text(
+                            'Update Goal',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      });
+              ],
+            ),
+          );
+        },
+      );
     },
   );
 }

@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (success && mounted) {
         // Navigate to home or main app screen
-        Navigator.of(context).pushReplacementNamed('/home');
+        await Navigator.of(context).pushReplacementNamed('/home');
       }
     }
   }
