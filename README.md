@@ -29,7 +29,37 @@ The UI is built with Flutter, following Apple's Human Interface Guidelines to cr
 
 ### Screenshots
 
-![App Screenshots]
+#### Authentication
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <img src="screenshots/login_screen.png" alt="Login Screen" width="250"/>
+  <img src="screenshots/register_screen.png" alt="Register Screen" width="250"/>
+  <img src="screenshots/register-2_screen.png" alt="Register Continuation Screen" width="250"/>
+</div>
+
+#### Meal Planning
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <img src="screenshots/meal-plan_screen.png" alt="Meal Plan Screen" width="250"/>
+</div>
+
+#### Recipes
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <img src="screenshots/recipes_screen.png" alt="Recipes Browse Screen" width="250"/>
+  <img src="screenshots/recipes-detail_screen.png" alt="Recipe Detail Screen" width="250"/>
+  <img src="screenshots/recipes-detail-2_screen.png" alt="Recipe Detail Additional Information" width="250"/>
+  <img src="screenshots/recipes-favorite_screen.png" alt="Favorite Recipes Screen" width="250"/>
+  <img src="screenshots/recipes-filter_screen.png" alt="Recipe Filter Options" width="250"/>
+</div>
+
+#### Goals
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <img src="screenshots/goal-create_screen.png" alt="Goal Creation Screen" width="250"/>
+  <img src="screenshots/goal-create-2_screen.png" alt="Goal Creation Details Screen" width="250"/>
+</div>
+
+#### Profile
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <img src="screenshots/profile_screen.png" alt="User Profile Screen" width="250"/>
+</div>
 
 ### UI Architecture
 
