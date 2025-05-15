@@ -11,6 +11,7 @@ import '../../models/progress.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_message.dart';
 import '../../widgets/loading_indicator.dart';
+import 'goal_detail_screen.dart';
 
 class GoalScreen extends StatefulWidget {
   const GoalScreen({super.key});
@@ -1165,7 +1166,12 @@ class _GoalCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           // Navigate to goal details
-          // TODO: Implement goal details screen
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => GoalDetailScreen(goal: goal),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
         child: Padding(

@@ -24,8 +24,9 @@ The UI is built with Flutter, following Apple's Human Interface Guidelines to cr
 
 - **Meal Plan**: Create and manage daily meal plans
 - **Recipes**: Browse, search, and filter recipes by various criteria
-- **Goals**: Set and track nutritional and health goals
+- **Goals**: Set and track nutritional and health goals with detailed insights
 - **Profile**: Manage user preferences and settings
+- **About**: Elegant app information screen with animations
 
 ### Screenshots
 
@@ -54,11 +55,13 @@ The UI is built with Flutter, following Apple's Human Interface Guidelines to cr
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
   <img src="screenshots/goal-create_screen.png" alt="Goal Creation Screen" width="250"/>
   <img src="screenshots/goal-create-2_screen.png" alt="Goal Creation Details Screen" width="250"/>
+  <img src="screenshots/goal-details_screen.png" alt="Goal Details Screen" width="250"/>
 </div>
 
-#### Profile
+#### Settings & Profile
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
   <img src="screenshots/profile_screen.png" alt="User Profile Screen" width="250"/>
+  <img src="screenshots/about-us_screen.png" alt="About App Screen" width="250"/>
 </div>
 
 ### UI Architecture
@@ -70,6 +73,13 @@ The Flutter application follows a clean architecture pattern:
 - **Services**: API communication (api_service, auth_service)
 - **Providers**: State management with Provider package
 - **Widgets**: Reusable UI components
+
+### Recent Updates
+
+- **Goal Details Screen**: Added detailed view for nutritional goals with progress tracking
+- **About Screen**: New elegant about screen following Apple's Human Interface Guidelines
+- **UI Enhancements**: Improved animations and transitions throughout the app
+- **Performance Optimizations**: Better loading states and cached data
 
 ## Backend (Node.js)
 
@@ -143,6 +153,8 @@ The application follows a client-server architecture:
 - Offline capability with local storage
 - Advanced recipe search and filtering
 - Nutritional calculation and tracking
+- Smooth animations and transitions
+- Apple Human Interface Guidelines compliance
 
 ## Development
 
@@ -151,6 +163,7 @@ The project uses:
 - Provider for state management
 - Node.js with Express for backend API
 - SQLite for database storage
+- Flutter Animate for beautiful animations
 
 ## Contact
 

@@ -1,4 +1,6 @@
-// ignore_for_file: inference_failure_on_instance_creation
+// ignore_for_file: inference_failure_on_instance_creation, deprecated_member_use
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,6 +12,9 @@ import 'profile_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  // App version - hardcoded for now, but could be read from a config file later
+  static const String appVersion = '1.0.0';
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
               title: 'About',
               subtitle: 'Learn more about the app',
               onTap: () {
-                // TODO: Show about dialog
+                _showAboutDialog(context);
               },
             ),
           ],
@@ -109,7 +114,7 @@ class SettingsScreen extends StatelessWidget {
         // App Version
         Center(
           child: Text(
-            'Version 1.0.0',
+            'Version $appVersion',
             style: AppTheme.bodyMedium.copyWith(
               color: AppTheme.textSecondaryColor,
             ),
@@ -118,6 +123,182 @@ class SettingsScreen extends StatelessWidget {
 
         const SizedBox(height: AppTheme.spacing32),
       ],
+    );
+  }
+
+  Future<void> _showAboutDialog(BuildContext context) async {
+    if (!context.mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              // App Icon
+              Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor,
+                        Color(0xFF5D8D9C),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_menu,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ).animate().fadeIn().scale(),
+
+              // App Name and Version
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text(
+                  'Meal Planner',
+                  style: AppTheme.displaySmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ).animate().fadeIn().slideY(),
+
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Version $appVersion',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+              ).animate().fadeIn().slideY(),
+
+              // Divider
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: Divider(
+                  color: Colors.grey.withOpacity(0.2),
+                ),
+              ),
+
+              // App Information
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInfoSection(
+                        title: 'About',
+                        content:
+                            'Meal Planner is a modern nutrition app designed to help you achieve your health and fitness goals through personalized meal planning and goal tracking.',
+                      ),
+
+                      _buildInfoSection(
+                        title: 'Features',
+                        content:
+                            '• Create personalized nutrition goals\n• Track your daily meals and nutrition\n• Browse and save recipes\n• Monitor your progress\n• Plan your weekly meals',
+                      ),
+
+                      _buildInfoSection(
+                        title: 'Built With',
+                        content:
+                            "Flutter and Node.js with a focus on beautiful design following Apple's Human Interface Guidelines.",
+                      ),
+
+                      _buildInfoSection(
+                        title: 'Credits',
+                        content: 'Icons by Material Design\nFonts by SF Pro',
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Copyright
+                      Center(
+                        child: Text(
+                          '© ${DateTime.now().year} Meal Planner. All rights reserved.',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoSection({
+    required String title,
+    required String content,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTheme.headlineSmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ).animate().fadeIn().slideX(),
+          const SizedBox(height: 8),
+          Text(
+            content,
+            style: AppTheme.bodyMedium.copyWith(
+              height: 1.5,
+            ),
+          ).animate().fadeIn().slideX(),
+        ],
+      ),
     );
   }
 
